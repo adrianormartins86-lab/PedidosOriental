@@ -34,18 +34,17 @@ st.markdown("""
 LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
 
 # ---------------------------------------------------------
-# SISTEMA DE LOGIN (NOVO VISUAL MOLICENTER QL)
+# SISTEMA DE LOGIN
 # ---------------------------------------------------------
 if 'usuario_logado' not in st.session_state:
     st.session_state['usuario_logado'] = None
 
 if st.session_state['usuario_logado'] is None:
-    st.write("<br><br><br>", unsafe_allow_html=True) # Espaçamento vertical
+    st.write("<br><br><br>", unsafe_allow_html=True) 
     col1, col2, col3 = st.columns([1, 1.5, 1])
     
     with col2:
         with st.container(border=True):
-            # Cabeçalho do Login: Título na esquerda, Logo na direita
             h_col1, h_col2 = st.columns([4, 1])
             with h_col1:
                 st.markdown("""
@@ -53,22 +52,18 @@ if st.session_state['usuario_logado'] is None:
                     <p style='color: #a0aec0; font-size: 15px; margin-top: 5px;'>Horti Japonês - Molicenter</p>
                 """, unsafe_allow_html=True)
             with h_col2:
-                # Alinhamento vertical da imagem
                 st.write("") 
                 st.image("passaro_logo.png", width=65)
                 
-            st.divider() # Linha de separação
+            st.divider() 
             
-            # Formulário de Autenticação
             usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
             usuario_selecionado = st.selectbox("Usuário de acesso:", usuarios_permitidos)
             
-            # Campo de senha oculto
             senha_digitada = st.text_input("Senha de acesso:", type="password")
             
             st.write("<br>", unsafe_allow_html=True)
             
-            # Validação de Senhas
             if st.button("Entrar no Sistema", type="primary", use_container_width=True):
                 if usuario_selecionado == "Selecione...":
                     st.error("⚠️ Por favor, selecione um usuário.")
@@ -80,9 +75,10 @@ if st.session_state['usuario_logado'] is None:
                     st.rerun()
                 elif senha_digitada != "":
                     st.error("⚠️ Senha incorreta. Tente novamente.")
-    st.stop() # Trava de segurança
+    st.stop() 
 
 usuario_atual = st.session_state['usuario_logado']
+acesso_total = usuario_atual == "Administrador"
 
 # ---------------------------------------------------------
 # INICIALIZAÇÃO DE DADOS E CACHE
@@ -153,31 +149,41 @@ def sincronizar_tabelas():
 sincronizar_tabelas()
 
 # ---------------------------------------------------------
-# MENU LATERAL (SIDEBAR)
+# MENU LATERAL (APENAS ADMINISTRADOR)
 # ---------------------------------------------------------
-with st.sidebar:
-    st.image("passaro_logo.png", width=80) 
-    st.markdown(f"### Olá, **{usuario_atual}**")
-    st.caption("Sistema de Pedidos Integrado")
-    st.divider()
-    
-    acesso_total = usuario_atual == "Administrador"
-
-    if acesso_total:
+if acesso_total:
+    with st.sidebar:
+        st.image("passaro_logo.png", width=80) 
+        st.markdown(f"### Olá, **{usuario_atual}**")
+        st.caption("Sistema de Pedidos Integrado")
+        st.divider()
+        
         perfil_navegacao = st.radio("📍 Navegação:", ["Painel Administrativo", "Visão das Lojas"])
-    else:
-        perfil_navegacao = "Visão das Lojas"
-    
-    st.divider()
-    if st.button("🚪 Sair / Logout", use_container_width=True):
-        st.session_state['usuario_logado'] = None
-        st.rerun()
+        
+        st.divider()
+        if st.button("🚪 Sair / Logout", use_container_width=True):
+            st.session_state['usuario_logado'] = None
+            st.rerun()
+else:
+    # Se for loja, trava na visão principal e não carrega a barra lateral
+    perfil_navegacao = "Visão das Lojas"
 
 # ---------------------------------------------------------
 # VISÃO DA LOJA (DIGITAÇÃO)
 # ---------------------------------------------------------
 if perfil_navegacao == "Visão das Lojas":
-    st.title("📋 Lançamento Semanal")
+    
+    # Cabeçalho adaptado para Lojas (com botão de logout no canto)
+    col_titulo, col_logout = st.columns([8, 2])
+    with col_titulo:
+        st.title("📋 Lançamento Semanal")
+    with col_logout:
+        st.write("<br>", unsafe_allow_html=True)
+        if not acesso_total: # Mostra o botão de sair aqui apenas se a barra lateral não existir
+            if st.button("🚪 Sair", use_container_width=True):
+                st.session_state['usuario_logado'] = None
+                st.rerun()
+
     st.markdown("Preencha as quantidades necessárias para a sua loja.")
     
     if acesso_total:
@@ -190,14 +196,15 @@ if perfil_navegacao == "Visão das Lojas":
     with st.container(border=True):
         st.info(f"💡 Editando catálogo para: **{loja_selecionada}**")
         
+        # Data Editor com larguras otimizadas para Mobile
         df_editado = st.data_editor(
             df_loja,
             column_config={
-                "Código": st.column_config.NumberColumn(disabled=True),
-                "Descrição": st.column_config.TextColumn(disabled=True),
-                "Código Barra": st.column_config.TextColumn("Cód. Barras", disabled=True),
-                "Marca": st.column_config.TextColumn(disabled=True),
-                loja_selecionada: st.column_config.NumberColumn("🛒 Qtd Pedido", min_value=0, step=1)
+                "Código": st.column_config.NumberColumn(width="small", disabled=True),
+                "Descrição": st.column_config.TextColumn(width="large", disabled=True),
+                "Código Barra": st.column_config.TextColumn("Cód. Barras", width="medium", disabled=True),
+                "Marca": st.column_config.TextColumn(width="small", disabled=True),
+                loja_selecionada: st.column_config.NumberColumn("🛒 Qtd Pedido", width="small", min_value=0, step=1)
             },
             hide_index=True,
             use_container_width=True,
@@ -235,14 +242,15 @@ elif perfil_navegacao == "Painel Administrativo":
             st.subheader("Gerenciar Produtos")
             st.caption("Adicione novos produtos na última linha (com o '+') ou delete selecionando a linha e apertando 'Delete'.")
             
+            # Larguras ajustadas aqui também para padronizar
             df_produtos_editado = st.data_editor(
                 st.session_state['df_produtos'],
                 num_rows="dynamic",
                 column_config={
-                    "Código": st.column_config.NumberColumn("Código Interno", required=True, min_value=1),
-                    "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
-                    "Código Barra": st.column_config.TextColumn("Cód. Barras", required=True),
-                    "Marca": st.column_config.TextColumn("Fabricante/Marca", required=True)
+                    "Código": st.column_config.NumberColumn("Código Interno", width="small", required=True, min_value=1),
+                    "Descrição": st.column_config.TextColumn("Descrição do Item", width="large", required=True),
+                    "Código Barra": st.column_config.TextColumn("Cód. Barras", width="medium", required=True),
+                    "Marca": st.column_config.TextColumn("Fabricante/Marca", width="small", required=True)
                 },
                 hide_index=True,
                 use_container_width=True,
