@@ -172,13 +172,11 @@ else:
 # ---------------------------------------------------------
 if perfil_navegacao == "Visão das Lojas":
     
-    # 1. Definir quem é a loja ativa ANTES de carregar o título
     if acesso_total:
         loja_selecionada = st.selectbox("👁️ Visão como (Selecione a Loja):", LOJAS)
     else:
         loja_selecionada = usuario_atual
     
-    # 2. Cabeçalho Dinâmico
     col_titulo, col_logout = st.columns([8, 2])
     with col_titulo:
         st.title(f"📋 {loja_selecionada} : Pedidos FLV - Oriental")
@@ -196,18 +194,18 @@ if perfil_navegacao == "Visão das Lojas":
     with st.container(border=True):
         st.info("💡 Clique na coluna 'Qtd Pedido' para digitar.")
         
-        # Data Editor com larguras restritas em PIXELS
+        # O SEGREDO ESTÁ AQUI: use_container_width=False e sem metragens fixas de colunas!
         df_editado = st.data_editor(
             df_loja,
             column_config={
-                "Código": st.column_config.NumberColumn(width=80, disabled=True, format="%d"),
-                "Descrição": st.column_config.TextColumn(disabled=True), # Sem largura fixa para expandir livremente
-                "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, disabled=True),
-                "Marca": st.column_config.TextColumn(width=100, disabled=True),
-                loja_selecionada: st.column_config.NumberColumn("🛒 Qtd Pedido", width=95, min_value=0, step=1)
+                "Código": st.column_config.NumberColumn(disabled=True, format="%d"),
+                "Descrição": st.column_config.TextColumn(disabled=True),
+                "Código Barra": st.column_config.TextColumn("Cód. Barras", disabled=True),
+                "Marca": st.column_config.TextColumn(disabled=True),
+                loja_selecionada: st.column_config.NumberColumn("🛒 Qtd Pedido", min_value=0, step=1)
             },
             hide_index=True,
-            use_container_width=True,
+            use_container_width=False, 
             height=600 
         )
         
@@ -242,17 +240,18 @@ elif perfil_navegacao == "Painel Administrativo":
             st.subheader("Gerenciar Produtos")
             st.caption("Adicione novos produtos na última linha (com o '+') ou delete selecionando a linha e apertando 'Delete'.")
             
+            # Aqui também aplicamos o use_container_width=False
             df_produtos_editado = st.data_editor(
                 st.session_state['df_produtos'],
                 num_rows="dynamic",
                 column_config={
-                    "Código": st.column_config.NumberColumn("Código Interno", width=80, required=True, min_value=1, format="%d"),
+                    "Código": st.column_config.NumberColumn("Código Interno", required=True, min_value=1, format="%d"),
                     "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
-                    "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, required=True),
-                    "Marca": st.column_config.TextColumn("Fabricante/Marca", width=100, required=True)
+                    "Código Barra": st.column_config.TextColumn("Cód. Barras", required=True),
+                    "Marca": st.column_config.TextColumn("Fabricante/Marca", required=True)
                 },
                 hide_index=True,
-                use_container_width=True,
+                use_container_width=False,
                 height=500
             )
             
@@ -269,13 +268,14 @@ elif perfil_navegacao == "Painel Administrativo":
             df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
             df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
             
+            # E no dataframe final também!
             st.dataframe(
                 df_final, 
                 hide_index=True, 
-                use_container_width=True, 
+                use_container_width=False, 
                 height=450,
                 column_config={
-                    "Código": st.column_config.NumberColumn(width=80, format="%d"),
+                    "Código": st.column_config.NumberColumn(format="%d"),
                     "TOTAL GERAL": st.column_config.NumberColumn("TOTAL GERAL", format="**%d**")
                 }
             )
