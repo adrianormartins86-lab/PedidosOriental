@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # 1. CONFIGURAÇÃO DA PÁGINA
-st.set_page_config(page_title="Gestão de Pedidos - Horti Japonês", page_icon="🍣", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Gestão de Pedidos - Horti Oriental", page_icon="🍣", layout="wide", initial_sidebar_state="expanded")
 
 # --- ESTILIZAÇÃO CSS CUSTOMIZADA ---
 st.markdown("""
@@ -31,7 +31,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Lista de lojas (01 a 08)
-LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
+LOJAS = ["Loja 01", "Loja 02", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
 
 # ---------------------------------------------------------
 # SISTEMA DE LOGIN
@@ -179,7 +179,7 @@ if perfil_navegacao == "Visão das Lojas":
     
     col_titulo, col_logout = st.columns([8, 2])
     with col_titulo:
-        st.title(f"📋 {loja_selecionada} : Pedidos FLV - Oriental")
+        st.title(f"📋 {loja_selecionada} : FLV - Oriental")
     with col_logout:
         st.write("<br>", unsafe_allow_html=True)
         if not acesso_total: 
