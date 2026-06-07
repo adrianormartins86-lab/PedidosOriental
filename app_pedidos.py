@@ -4,7 +4,7 @@ import pandas as pd
 # 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(page_title="Gestão de Pedidos - Horti Japonês", page_icon="🍣", layout="wide", initial_sidebar_state="expanded")
 
-# --- ESTILIZAÇÃO CSS CUSTOMIZADA (MODERNA) ---
+# --- ESTILIZAÇÃO CSS CUSTOMIZADA ---
 st.markdown("""
 <style>
     /* Estilização dos botões principais */
@@ -27,20 +27,6 @@ st.markdown("""
     div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
-    
-    /* Estilização da tela de Login */
-    .login-header {
-        text-align: center;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        margin-top: 1rem;
-    }
-    .login-subheader {
-        text-align: center;
-        color: #888;
-        margin-bottom: 2rem;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -48,38 +34,53 @@ st.markdown("""
 LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
 
 # ---------------------------------------------------------
-# SISTEMA DE LOGIN (VISUAL ATUALIZADO)
+# SISTEMA DE LOGIN (NOVO VISUAL MOLICENTER QL)
 # ---------------------------------------------------------
 if 'usuario_logado' not in st.session_state:
     st.session_state['usuario_logado'] = None
 
 if st.session_state['usuario_logado'] is None:
-    st.write("<br><br><br>", unsafe_allow_html=True) # Espaçamento
+    st.write("<br><br><br>", unsafe_allow_html=True) # Espaçamento vertical
     col1, col2, col3 = st.columns([1, 1.5, 1])
     
     with col2:
         with st.container(border=True):
-            # Centralizando a imagem do mascote
-            col_img1, col_img2, col_img3 = st.columns([1, 1.5, 1])
-            with col_img2:
-                # O arquivo passaro_logo.png deve estar na mesma pasta do GitHub
-                st.image("passaro_logo.png", use_container_width=True)
+            # Cabeçalho do Login: Título na esquerda, Logo na direita
+            h_col1, h_col2 = st.columns([4, 1])
+            with h_col1:
+                st.markdown("""
+                    <h2 style='margin-bottom: 0px; padding-bottom: 0px;'>Portal de Pedidos</h2>
+                    <p style='color: #a0aec0; font-size: 15px; margin-top: 5px;'>Horti Japonês - Molicenter</p>
+                """, unsafe_allow_html=True)
+            with h_col2:
+                # Alinhamento vertical da imagem
+                st.write("") 
+                st.image("passaro_logo.png", width=65)
                 
-            st.markdown('<div class="login-header">Portal de Pedidos</div>', unsafe_allow_html=True)
-            st.markdown('<div class="login-subheader">Horti Japonês</div>', unsafe_allow_html=True)
+            st.divider() # Linha de separação
             
-            # Atualização para perfil único de Administrador
+            # Formulário de Autenticação
             usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
-            usuario_selecionado = st.selectbox("Selecione seu perfil de acesso:", usuarios_permitidos)
+            usuario_selecionado = st.selectbox("Usuário de acesso:", usuarios_permitidos)
+            
+            # Campo de senha oculto
+            senha_digitada = st.text_input("Senha de acesso:", type="password")
             
             st.write("<br>", unsafe_allow_html=True)
-            if st.button("🚀 Acessar Sistema", type="primary", use_container_width=True):
-                if usuario_selecionado != "Selecione...":
+            
+            # Validação de Senhas
+            if st.button("Entrar no Sistema", type="primary", use_container_width=True):
+                if usuario_selecionado == "Selecione...":
+                    st.error("⚠️ Por favor, selecione um usuário.")
+                elif usuario_selecionado == "Administrador" and senha_digitada == "moli0000":
                     st.session_state['usuario_logado'] = usuario_selecionado
-                    st.rerun() 
-                else:
-                    st.error("⚠️ Por favor, selecione um usuário válido na lista.")
-    st.stop() 
+                    st.rerun()
+                elif usuario_selecionado in LOJAS and senha_digitada == "moli1234":
+                    st.session_state['usuario_logado'] = usuario_selecionado
+                    st.rerun()
+                elif senha_digitada != "":
+                    st.error("⚠️ Senha incorreta. Tente novamente.")
+    st.stop() # Trava de segurança
 
 usuario_atual = st.session_state['usuario_logado']
 
@@ -155,12 +156,11 @@ sincronizar_tabelas()
 # MENU LATERAL (SIDEBAR)
 # ---------------------------------------------------------
 with st.sidebar:
-    st.image("passaro_logo.png", width=80) # O passarinho também aparece aqui
+    st.image("passaro_logo.png", width=80) 
     st.markdown(f"### Olá, **{usuario_atual}**")
     st.caption("Sistema de Pedidos Integrado")
     st.divider()
     
-    # Validação atualizada para "Administrador"
     acesso_total = usuario_atual == "Administrador"
 
     if acesso_total:
