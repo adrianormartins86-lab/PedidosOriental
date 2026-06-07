@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="Gestão de Pedidos - Horti Oriental",
     page_icon="🍣",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded"  # será sobrescrito via CSS para lojas
 )
 
 # ─────────────────────────────────────────────
@@ -218,6 +218,54 @@ h2, h3 { color: var(--text-primary) !important; }
     text-align: center;
     margin-top: 10px;
 }
+
+/* ── Ocultar sidebar para lojas ── */
+.sidebar-hidden section[data-testid="stSidebar"],
+.sidebar-hidden [data-testid="collapsedControl"] {
+    display: none !important;
+}
+.sidebar-hidden .main .block-container {
+    max-width: 100% !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+/* ── Barra de topo para lojas ── */
+.topbar-loja {
+    background: linear-gradient(90deg, var(--green-dark) 0%, #0d2018 100%);
+    border: 1px solid var(--green-mid);
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.topbar-badge {
+    background: var(--green-mid);
+    border: 1px solid var(--green-accent);
+    color: var(--green-bright);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+}
+.topbar-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-header);
+}
+.topbar-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -280,6 +328,25 @@ if st.session_state['usuario_logado'] is None:
 # ─────────────────────────────────────────────
 usuario_atual = st.session_state['usuario_logado']
 acesso_total  = usuario_atual == "Administrador"
+
+# Oculta sidebar completamente para usuários de loja
+if not acesso_total:
+    st.markdown("""
+    <script>
+        document.body.classList.add('sidebar-hidden');
+        const root = window.parent.document.querySelector('.stApp');
+        if (root) root.classList.add('sidebar-hidden');
+    </script>
+    <style>
+        section[data-testid="stSidebar"] { display: none !important; }
+        [data-testid="collapsedControl"]  { display: none !important; }
+        .main .block-container {
+            max-width: 100% !important;
+            padding-left: 2.5rem !important;
+            padding-right: 2.5rem !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 # Limpeza de cache se estrutura mudou
 limpar_cache = False
