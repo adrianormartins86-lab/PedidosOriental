@@ -34,6 +34,7 @@ st.markdown("""
         font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
+        margin-top: 1rem;
     }
     .login-subheader {
         text-align: center;
@@ -58,10 +59,17 @@ if st.session_state['usuario_logado'] is None:
     
     with col2:
         with st.container(border=True):
-            st.markdown('<div class="login-header">🍣 Portal de Pedidos</div>', unsafe_allow_html=True)
-            st.markdown('<div class="login-subheader">Horti Japonês • Molicenter</div>', unsafe_allow_html=True)
+            # Centralizando a imagem do mascote
+            col_img1, col_img2, col_img3 = st.columns([1, 1.5, 1])
+            with col_img2:
+                # O arquivo passaro_logo.png deve estar na mesma pasta do GitHub
+                st.image("passaro_logo.png", use_container_width=True)
+                
+            st.markdown('<div class="login-header">Portal de Pedidos</div>', unsafe_allow_html=True)
+            st.markdown('<div class="login-subheader">Horti Japonês</div>', unsafe_allow_html=True)
             
-            usuarios_permitidos = ["Selecione..."] + ["Analista", "Supervisor"] + LOJAS
+            # Atualização para perfil único de Administrador
+            usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
             usuario_selecionado = st.selectbox("Selecione seu perfil de acesso:", usuarios_permitidos)
             
             st.write("<br>", unsafe_allow_html=True)
@@ -76,7 +84,7 @@ if st.session_state['usuario_logado'] is None:
 usuario_atual = st.session_state['usuario_logado']
 
 # ---------------------------------------------------------
-# INICIALIZAÇÃO DE DADOS E CACHE (Mantido igual)
+# INICIALIZAÇÃO DE DADOS E CACHE
 # ---------------------------------------------------------
 limpar_cache = False
 if 'df_pedidos' in st.session_state:
@@ -147,12 +155,13 @@ sincronizar_tabelas()
 # MENU LATERAL (SIDEBAR)
 # ---------------------------------------------------------
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3143/3143644.png", width=60) # Ícone decorativo
+    st.image("passaro_logo.png", width=80) # O passarinho também aparece aqui
     st.markdown(f"### Olá, **{usuario_atual}**")
     st.caption("Sistema de Pedidos Integrado")
     st.divider()
     
-    acesso_total = usuario_atual in ["Analista", "Supervisor"]
+    # Validação atualizada para "Administrador"
+    acesso_total = usuario_atual == "Administrador"
 
     if acesso_total:
         perfil_navegacao = st.radio("📍 Navegação:", ["Painel Administrativo", "Visão das Lojas"])
@@ -178,11 +187,9 @@ if perfil_navegacao == "Visão das Lojas":
     
     df_loja = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'][["Código", loja_selecionada]], on="Código")
     
-    # Card de Informação
     with st.container(border=True):
         st.info(f"💡 Editando catálogo para: **{loja_selecionada}**")
         
-        # O Data Editor com altura ampliada
         df_editado = st.data_editor(
             df_loja,
             column_config={
@@ -197,7 +204,6 @@ if perfil_navegacao == "Visão das Lojas":
             height=600 
         )
         
-        # Cálculo de métricas para a loja
         itens_com_pedido = (df_editado[loja_selecionada] > 0).sum()
         total_itens = len(df_editado)
         
@@ -208,7 +214,7 @@ if perfil_navegacao == "Visão das Lojas":
             st.metric("Itens Preenchidos", f"{itens_com_pedido} / {total_itens}")
             
         with col_btn:
-            st.write("<br>", unsafe_allow_html=True) # Alinha o botão com a métrica
+            st.write("<br>", unsafe_allow_html=True) 
             if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
                 for idx, row in df_editado.iterrows():
                     cod = row["Código"]
@@ -217,7 +223,7 @@ if perfil_navegacao == "Visão das Lojas":
                 st.success(f"✅ Pedido da {loja_selecionada} salvo com sucesso no banco de dados!")
 
 # ---------------------------------------------------------
-# VISÃO DO SUPERVISOR / ANALISTA
+# VISÃO DO ADMINISTRADOR
 # ---------------------------------------------------------
 elif perfil_navegacao == "Painel Administrativo":
     st.title("⚙️ Painel de Controle Integrado")
@@ -256,7 +262,6 @@ elif perfil_navegacao == "Painel Administrativo":
             df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
             df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
             
-            # Formatação visual da coluna total
             st.dataframe(
                 df_final, 
                 hide_index=True, 
