@@ -194,19 +194,18 @@ if perfil_navegacao == "Visão das Lojas":
     with st.container(border=True):
         st.info("💡 Clique na coluna 'Qtde' para digitar.")
         
-        # Voltei para use_container_width=True para não espremer/cortar
-        # Ajustei as larguras para equilibrar a tela (a Qtde ganhou 120 pixels para respirar)
+        # Removidas as larguras fixas e use_container_width=False para auto-ajuste sem esticar
         df_editado = st.data_editor(
             df_loja,
             column_config={
-                "Código": st.column_config.NumberColumn(width=80, disabled=True, format="%d"),
-                "Descrição": st.column_config.TextColumn(width="large", disabled=True),
-                "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, disabled=True),
-                "Marca": st.column_config.TextColumn(width="medium", disabled=True),
-                loja_selecionada: st.column_config.NumberColumn("🛒 Qtde", width=120, min_value=0, step=1)
+                "Código": st.column_config.NumberColumn(disabled=True, format="%d"),
+                "Descrição": st.column_config.TextColumn(disabled=True),
+                "Código Barra": st.column_config.TextColumn("Cód. Barras", disabled=True),
+                "Marca": st.column_config.TextColumn(disabled=True),
+                loja_selecionada: st.column_config.NumberColumn("🛒 Qtde", min_value=0, step=1)
             },
             hide_index=True,
-            use_container_width=True, 
+            use_container_width=False, 
             height=600 
         )
         
@@ -245,13 +244,13 @@ elif perfil_navegacao == "Painel Administrativo":
                 st.session_state['df_produtos'],
                 num_rows="dynamic",
                 column_config={
-                    "Código": st.column_config.NumberColumn("Código Interno", width=90, required=True, min_value=1, format="%d"),
-                    "Descrição": st.column_config.TextColumn("Descrição do Item", width="large", required=True),
-                    "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, required=True),
-                    "Marca": st.column_config.TextColumn("Fabricante/Marca", width="medium", required=True)
+                    "Código": st.column_config.NumberColumn("Código Interno", required=True, min_value=1, format="%d"),
+                    "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
+                    "Código Barra": st.column_config.TextColumn("Cód. Barras", required=True),
+                    "Marca": st.column_config.TextColumn("Fabricante/Marca", required=True)
                 },
                 hide_index=True,
-                use_container_width=True,
+                use_container_width=False,
                 height=500
             )
             
@@ -272,11 +271,11 @@ elif perfil_navegacao == "Painel Administrativo":
             st.dataframe(
                 df_final, 
                 hide_index=True, 
-                use_container_width=True, 
+                use_container_width=False, 
                 height=450,
                 column_config={
-                    "Código": st.column_config.NumberColumn(width=80, format="%d"),
-                    "TOTAL GERAL": st.column_config.NumberColumn("TOTAL GERAL", width=120, format="**%d**")
+                    "Código": st.column_config.NumberColumn(format="%d"),
+                    "TOTAL GERAL": st.column_config.NumberColumn("TOTAL GERAL", format="**%d**")
                 }
             )
             
