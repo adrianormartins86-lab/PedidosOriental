@@ -528,10 +528,28 @@ elif perfil_navegacao == "Visão das Lojas":
     else:
         loja_selecionada = usuario_atual
 
-    page_header("📋", f"{loja_selecionada} — FLV Oriental",
-                "Preencha as quantidades necessárias e salve o pedido da semana")
+    # ── Topbar: identidade + logout (sem sidebar) ──
+    col_info, col_logout = st.columns([8, 2])
+    with col_info:
+        st.markdown(f"""
+        <div class="topbar-loja">
+            <div class="topbar-left">
+                <span style="font-size:22px">📋</span>
+                <div>
+                    <div class="topbar-title">{loja_selecionada} — FLV Oriental</div>
+                    <div class="topbar-sub">Preencha as quantidades necessárias e salve o pedido da semana</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_logout:
+        # Alinha o botão verticalmente com o banner (46px = altura aprox do banner)
+        st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+        if st.button("🚪 Sair / Logout", use_container_width=True):
+            st.session_state['usuario_logado'] = None
+            st.rerun()
 
-    # Produtos visíveis para esta loja
+    # ── Produtos visíveis para esta loja ──
     df_visiveis = st.session_state['df_produtos'][
         st.session_state['df_produtos'][loja_selecionada] == True
     ]
@@ -546,10 +564,10 @@ elif perfil_navegacao == "Visão das Lojas":
                 "Linhas com quantidade > 0 ficam destacadas automaticamente.")
 
         col_cfg_loja = {
-            "Código":       st.column_config.NumberColumn(width=85,  format="%d",  disabled=True),
-            "Descrição":    st.column_config.TextColumn(             disabled=True),
-            "Código Barra": st.column_config.TextColumn("Cód. Barras", width=130, disabled=True),
-            "Marca":        st.column_config.TextColumn(width=110,   disabled=True),
+            "Código":         st.column_config.NumberColumn(width=85,  format="%d", disabled=True),
+            "Descrição":      st.column_config.TextColumn(disabled=True),
+            "Código Barra":   st.column_config.TextColumn("Cód. Barras", width=130, disabled=True),
+            "Marca":          st.column_config.TextColumn(width=110, disabled=True),
             loja_selecionada: st.column_config.NumberColumn(
                 "🛒 Qtde", width=100, min_value=0, step=1,
                 help="Digite a quantidade desejada para esta semana"
@@ -558,12 +576,13 @@ elif perfil_navegacao == "Visão das Lojas":
 
         df_editado = st.data_editor(
             df_loja, column_config=col_cfg_loja,
-            hide_index=True, use_container_width=True, height=580
+            hide_index=True, use_container_width=True, height=520
         )
 
         itens_com_pedido = int((df_editado[loja_selecionada] > 0).sum())
         total_itens      = len(df_editado)
         total_unidades   = int(df_editado[loja_selecionada].sum())
+        pct              = round(itens_com_pedido / total_itens * 100) if total_itens else 0
 
         st.divider()
 
@@ -574,7 +593,6 @@ elif perfil_navegacao == "Visão das Lojas":
         with m2:
             st.metric("Total de unidades", total_unidades)
         with m3:
-            pct = round(itens_com_pedido / total_itens * 100) if total_itens else 0
             st.metric("Cobertura", f"{pct}%")
         with col_btn:
             st.write("<br>", unsafe_allow_html=True)
@@ -583,12 +601,6 @@ elif perfil_navegacao == "Visão das Lojas":
                     mask = st.session_state['df_pedidos']["Código"] == row["Código"]
                     st.session_state['df_pedidos'].loc[mask, loja_selecionada] = row[loja_selecionada]
                 st.success(f"✅ Pedido da {loja_selecionada} salvo com sucesso!")
-
-        if not acesso_total:
-            st.divider()
-            if st.button("🚪 Sair", use_container_width=False):
-                st.session_state['usuario_logado'] = None
-                st.rerun()
 
 # ─────────────────────────────────────────────
 # ROTA 3: CATÁLOGO DE PRODUTOS
