@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 # ─────────────────────────────────────────────
 # CONFIGURAÇÃO DA PÁGINA
@@ -511,6 +512,21 @@ if perfil_navegacao == "Separação e Fechamento":
                 mime="text/csv",
                 use_container_width=True
             )
+
+        # Exporta o dataframe para o Excel dentro do buffer
+df_editado_admin.to_excel(buffer, index=False, sheet_name='Separacao')
+
+# Volta o ponteiro do buffer para o início
+buffer.seek(0)
+
+# Botão de download
+st.download_button(
+    label='⬇️ Exportar Excel',
+    data=buffer,
+    file_name='separacao_semanal_horti.xlsx',
+    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    use_container_width=True
+)
 
         with col_limpa:
             if st.button("🚨 Zerar Pedidos", use_container_width=True):
