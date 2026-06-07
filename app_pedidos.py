@@ -4,13 +4,23 @@ import pandas as pd
 # 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(page_title="Gestão de Pedidos - Horti Japonês", layout="wide")
 
-# Lista de lojas (baseada no layout das suas planilhas)
+# Lista de lojas exata
 LOJAS = ["Loja 01", "Loja 02", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
 
+# --- CORREÇÃO DE CACHE/SESSÃO ANTIGA ---
+# Verifica se o banco de dados temporário antigo está na memória com as colunas erradas (ex: "Loja 1"). 
+# Se estiver, nós apagamos para forçar a recriação correta.
+if 'df_pedidos' in st.session_state:
+    colunas_atuais = st.session_state['df_pedidos'].columns.tolist()
+    # Verifica se todas as lojas da lista atual estão nas colunas do dataframe na memória
+    faltando = [loja for loja in LOJAS if loja not in colunas_atuais]
+    if faltando:
+        del st.session_state['df_pedidos']
+        if 'df_produtos' in st.session_state:
+            del st.session_state['df_produtos']
+
 # 2. INICIALIZAÇÃO DO BANCO DE DADOS TEMPORÁRIO (Session State)
-# Nota: Em produção, você substituirá essa parte pela leitura/escrita do seu Google Sheets.
 if 'df_produtos' not in st.session_state:
-    # Produtos iniciais extraídos da imagem enviada
     produtos_iniciais = [
         {"Código": 521798, "Descrição": "Ampan Azuki C/6 Satsumaya", "Marca": "Satsumaya"},
         {"Código": 520504, "Descrição": "Kamaboko 200g Agronippo", "Marca": "Agronippo"},
@@ -26,16 +36,13 @@ if 'df_produtos' not in st.session_state:
     st.session_state['df_produtos'] = pd.DataFrame(produtos_iniciais)
 
 if 'df_pedidos' not in st.session_state:
-    # Cria a matriz de pedidos vinculada aos códigos ativos
     df_p = pd.DataFrame(columns=["Código"] + LOJAS)
     df_p["Código"] = st.session_state['df_produtos']["Código"]
-    df_p[LOJAS] = 0  # Começa tudo zerado
+    df_p[LOJAS] = 0  
     st.session_state['df_pedidos'] = df_p
-
 
 # 3. FUNÇÃO DE SINCRONIZAÇÃO EM TEMPO REAL
 def sincronizar_tabelas():
-    """Garante que a tabela de digitação das lojas siga exatamente o cadastro do supervisor"""
     df_prod = st.session_state['df_produtos']
     df_ped = st.session_state['df_pedidos']
     
@@ -48,34 +55,29 @@ def sincronizar_tabelas():
     if not novos_codigos.empty:
         df_novos = pd.DataFrame(columns=["Código"] + LOJAS)
         df_novos["Código"] = novos_codigos
-        df_novos[LOJAS] = 0  # Inicializa o novo item com zero para todas as lojas
+        df_novos[LOJAS] = 0  
         df_ped = pd.concat([df_ped, df_novos], ignore_index=True)
         
     st.session_state['df_pedidos'] = df_ped
 
-# Executa a sincronização preventiva
 sincronizar_tabelas()
-
 
 # 4. INTERFACE DO USUÁRIO
 st.title("🍣 Sistema Central de Pedidos - Horti Japonês")
 
-# Menu de navegação lateral
 perfil = st.sidebar.radio("Selecione o seu Perfil:", ["Área da Loja (Digitação)", "Painel do Supervisor (Gerencial)"])
 
 # ---------------------------------------------------------
-# CÓDIGO DA VISÃO DA LOJA
+# VISÃO DA LOJA
 # ---------------------------------------------------------
 if perfil == "Área da Loja (Digitação)":
     st.header("📋 Lançamento Semanal de Pedidos")
     loja_selecionada = st.selectbox("Selecione a sua Loja para digitação:", LOJAS)
     
-    # Faz um merge dinâmico para trazer a descrição atualizada do produto e a quantidade da loja
     df_loja = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'][["Código", loja_selecionada]], on="Código")
     
-    st.info(f"O catálogo abaixo reflete as atualizações mais recentes do supervisor. Insira os pedidos da **{loja_selecionada}**:")
+    st.info(f"O catálogo abaixo reflete as atualizações mais recentes. Insira os pedidos da **{loja_selecionada}**:")
     
-    # Editor focado apenas na coluna da loja selecionada
     df_editado = st.data_editor(
         df_loja,
         column_config={
@@ -84,12 +86,10 @@ if perfil == "Área da Loja (Digitação)":
             "Marca": st.column_config.TextColumn(disabled=True),
             loja_selecionada: st.column_config.NumberColumn("Qtd Pedido", min_value=0, step=1)
         },
-        hide_index=True,
-        use_container_width=True
+        hide_index=True
     )
     
     if st.button("💾 Enviar/Atualizar Pedido da Loja", type="primary"):
-        # Transfere os dados editados de volta para o banco de dados principal
         for idx, row in df_editado.iterrows():
             cod = row["Código"]
             qtd = row[loja_selecionada]
@@ -97,19 +97,17 @@ if perfil == "Área da Loja (Digitação)":
         st.success(f"Sucesso! Os dados da {loja_selecionada} foram gravados.")
 
 # ---------------------------------------------------------
-# CÓDIGO DA VISÃO DO SUPERVISOR
+# VISÃO DO SUPERVISOR
 # ---------------------------------------------------------
 else:
     st.header("⚙️ Painel Administrativo")
     
-    # Divisão por abas para organizar o trabalho do Supervisor
     aba_cadastro, aba_consolidado = st.tabs(["✏️ Cadastrar/Editar Produtos", "📊 Visualizar e Fechar Pedidos"])
     
     with aba_cadastro:
         st.subheader("Gerenciamento do Catálogo Geral")
-        st.caption("Dica: Use a última linha vazia com o símbolo '+' para adicionar novos produtos. Para deletar, selecione a linha clicando na lateral esquerda e aperte 'Delete' no teclado.")
+        st.caption("Adicione novos produtos na última linha ou delete selecionando a linha e apertando 'Delete'.")
         
-        # O Editor Dinâmico do Catálogo (num_rows="dynamic" habilita inclusão/exclusão)
         df_produtos_editado = st.data_editor(
             st.session_state['df_produtos'],
             num_rows="dynamic",
@@ -118,27 +116,22 @@ else:
                 "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
                 "Marca": st.column_config.TextColumn("Fabricante/Marca", required=True)
             },
-            hide_index=True,
-            use_container_width=True
+            hide_index=True
         )
         
-        if st.button("🔄 Salvar e Disponibilizar Novo Catálogo para as Lojas", type="primary"):
+        if st.button("🔄 Salvar e Disponibilizar Novo Catálogo", type="primary"):
             st.session_state['df_produtos'] = df_produtos_editado
             sincronizar_tabelas()
-            st.success("Catálogo atualizado com sucesso! Todas as visões das lojas foram modificadas em tempo real.")
+            st.success("Catálogo atualizado! Todas as visões das lojas foram modificadas.")
             st.rerun()
 
     with aba_consolidado:
         st.subheader("Painel Geral de Separação")
         
-        # Consolida as descrições e todas as quantidades digitadas pelas lojas em uma única tabela
         df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
-        
-        # Calcula a soma total horizontal para o supervisor saber o quanto pedir do fornecedor
         df_final["Total Consolidado"] = df_final[LOJAS].sum(axis=1)
         
-        # Exibe o resultado de forma limpa
-        st.dataframe(df_final, hide_index=True, use_container_width=True)
+        st.dataframe(df_final, hide_index=True)
         
         st.divider()
         col_exp, col_limpeza = st.columns(2)
@@ -147,17 +140,17 @@ else:
             st.markdown("### 📥 Exportação de Resultados")
             csv = df_final.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="Download dos Pedidos Consolidados (CSV)",
+                label="Download dos Pedidos (CSV)",
                 data=csv,
                 file_name='separacao_semanal_horti.csv',
                 mime='text/csv'
             )
             
         with col_limpeza:
-            st.markdown("### 🧹 Preparação para a Próxima Semana")
-            st.warning("A ação abaixo vai zerar a quantidade de pedidos digitada pelas lojas, mas preservará o cadastro de produtos.")
+            st.markdown("### 🧹 Nova Semana")
+            st.warning("Zera as quantidades digitadas, mas mantém o cadastro.")
             
-            if st.button("🚨 Limpar Pedidos das Lojas (Zerar Semana)"):
+            if st.button("🚨 Limpar Pedidos das Lojas"):
                 st.session_state['df_pedidos'][LOJAS] = 0
-                st.success("Tabela limpa! O sistema está pronto para receber as digitações da próxima semana.")
+                st.success("Tabela limpa! Pronta para a próxima semana.")
                 st.rerun()
