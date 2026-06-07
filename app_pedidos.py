@@ -582,8 +582,7 @@ elif perfil_navegacao == "Visão das Lojas":
         col_cfg_loja = {
             "Código":         st.column_config.NumberColumn(width=85,  format="%d", disabled=True),
             "Descrição":      st.column_config.TextColumn(disabled=True),
-            "Código Barra":   st.column_config.TextColumn("Cód. Barras", width=130, disabled=True),
-            "Marca":          st.column_config.TextColumn(width=110, disabled=True),
+          
             loja_selecionada: st.column_config.NumberColumn(
                 "🛒 Qtde", width=100, min_value=0, step=1,
                 help="Digite a quantidade desejada para esta semana"
