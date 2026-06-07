@@ -321,7 +321,7 @@ elif perfil_navegacao == "Catálogo de Produtos":
         }
         
         for loja in LOJAS:
-            config_catalogo[loja] = st.column_config.CheckboxColumn(f"Exibir: {loja}", default=True)
+            config_catalogo[loja] = st.column_config.CheckboxColumn(f"{loja}", default=True)
         
         df_produtos_editado = st.data_editor(
             st.session_state['df_produtos'],
