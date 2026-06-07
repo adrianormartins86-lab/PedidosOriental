@@ -189,7 +189,7 @@ if perfil_navegacao == "Separação e Fechamento":
         # Filtra apenas as colunas base de produtos para não conflitar as colunas booleanas das lojas com as quantidades
         df_produtos_base = st.session_state['df_produtos'][["Código", "Descrição", "Código Barra", "Marca"]]
         df_final = pd.merge(df_produtos_base, st.session_state['df_pedidos'], on="Código")
-        df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
+        df_final["Total"] = df_final[LOJAS].sum(axis=1)
         
         colunas_config_consolidado = {
             "Código": st.column_config.NumberColumn(width=80, format="%d", disabled=True),
