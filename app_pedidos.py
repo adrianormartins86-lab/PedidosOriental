@@ -149,7 +149,7 @@ def sincronizar_tabelas():
 sincronizar_tabelas()
 
 # ---------------------------------------------------------
-# MENU LATERAL (APENAS ADMINISTRADOR)
+# MENU LATERAL
 # ---------------------------------------------------------
 if acesso_total:
     with st.sidebar:
@@ -158,7 +158,11 @@ if acesso_total:
         st.caption("Sistema de Pedidos Integrado")
         st.divider()
         
-        perfil_navegacao = st.radio("📍 Navegação:", ["Painel Administrativo", "Visão das Lojas"])
+        perfil_navegacao = st.radio("📍 Navegação:", [
+            "Separação e Fechamento", 
+            "Visão das Lojas", 
+            "Catálogo de Produtos"
+        ])
         
         st.divider()
         if st.button("🚪 Sair / Logout", use_container_width=True):
@@ -168,9 +172,72 @@ else:
     perfil_navegacao = "Visão das Lojas"
 
 # ---------------------------------------------------------
-# VISÃO DA LOJA (DIGITAÇÃO)
+# ROTA 1: SEPARAÇÃO E FECHAMENTO (ADMINISTRADOR)
 # ---------------------------------------------------------
-if perfil_navegacao == "Visão das Lojas":
+if perfil_navegacao == "Separação e Fechamento":
+    st.title("📊 Separação e Fechamento")
+    st.markdown("Consolidado Geral de Pedidos. Como administrador, você pode editar diretamente as quantidades de qualquer loja.")
+    
+    with st.container(border=True):
+        df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
+        df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
+        
+        # Formatação dinâmica das colunas: Lojas agora são editáveis
+        colunas_config_consolidado = {
+            "Código": st.column_config.NumberColumn(width=80, format="%d", disabled=True),
+            "Descrição": st.column_config.TextColumn(disabled=True),
+            "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, disabled=True),
+            "Marca": st.column_config.TextColumn(width=100, disabled=True),
+            "TOTAL GERAL": st.column_config.NumberColumn("TOTAL GERAL", width=100, format="**%d**", disabled=True)
+        }
+        
+        for loja in LOJAS:
+            # Ao remover 'disabled=True', a coluna fica livre para edição
+            colunas_config_consolidado[loja] = st.column_config.NumberColumn(loja, format="%d", min_value=0, step=1)
+        
+        # O administrador digita os ajustes nesta tabela
+        df_editado_admin = st.data_editor(
+            df_final, 
+            hide_index=True, 
+            use_container_width=False, 
+            height=600,
+            column_config=colunas_config_consolidado
+        )
+        
+        st.divider()
+        col_salvar, col_vazia = st.columns([3, 7])
+        with col_salvar:
+            if st.button("💾 Salvar Alterações nas Lojas", type="primary", use_container_width=True):
+                for loja in LOJAS:
+                    st.session_state['df_pedidos'][loja] = df_editado_admin[loja]
+                st.success("✅ Ajustes salvos com sucesso!")
+                st.rerun()
+
+        st.divider()
+        
+        col_exp, col_limpeza, col_vazia2 = st.columns([3, 3, 4])
+        with col_exp:
+            st.markdown("#### 📥 Exportar Tabela")
+            # Gera o CSV com os dados da tela (mesmo que ainda não tenham sido salvos)
+            csv = df_editado_admin.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="⬇️ Download em CSV",
+                data=csv,
+                file_name='separacao_semanal_horti.csv',
+                mime='text/csv'
+            )
+            
+        with col_limpeza:
+            st.markdown("#### 🧹 Nova Semana")
+            if st.button("🚨 Limpar Lojas (Zerar Pedidos)"):
+                st.session_state['df_pedidos'][LOJAS] = 0
+                st.success("✅ Tabela limpa! Sistema pronto para nova semana.")
+                st.rerun()
+
+# ---------------------------------------------------------
+# ROTA 2: VISÃO DAS LOJAS
+# ---------------------------------------------------------
+elif perfil_navegacao == "Visão das Lojas":
     
     if acesso_total:
         loja_selecionada = st.selectbox("👁️ Visão como (Selecione a Loja):", LOJAS)
@@ -194,15 +261,14 @@ if perfil_navegacao == "Visão das Lojas":
     with st.container(border=True):
         st.info("💡 Clique na coluna 'Qtde' para digitar.")
         
-        # Removidas as larguras fixas e use_container_width=False para auto-ajuste sem esticar
         df_editado = st.data_editor(
             df_loja,
             column_config={
-                "Código": st.column_config.NumberColumn(disabled=True, format="%d"),
+                "Código": st.column_config.NumberColumn(width=80, disabled=True, format="%d"),
                 "Descrição": st.column_config.TextColumn(disabled=True),
-                "Código Barra": st.column_config.TextColumn("Cód. Barras", disabled=True),
-                "Marca": st.column_config.TextColumn(disabled=True),
-                loja_selecionada: st.column_config.NumberColumn("🛒 Qtde", min_value=0, step=1)
+                "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, disabled=True),
+                "Marca": st.column_config.TextColumn(width=100, disabled=True),
+                loja_selecionada: st.column_config.NumberColumn("🛒 Qtde", width=95, min_value=0, step=1)
             },
             hide_index=True,
             use_container_width=False, 
@@ -228,73 +294,34 @@ if perfil_navegacao == "Visão das Lojas":
                 st.success(f"✅ Pedido da {loja_selecionada} salvo com sucesso no banco de dados!")
 
 # ---------------------------------------------------------
-# VISÃO DO ADMINISTRADOR
+# ROTA 3: CATÁLOGO DE PRODUTOS (ADMINISTRADOR)
 # ---------------------------------------------------------
-elif perfil_navegacao == "Painel Administrativo":
-    st.title("⚙️ Painel de Controle Integrado")
+elif perfil_navegacao == "Catálogo de Produtos":
+    st.title("🏷️ Catálogo de Produtos")
+    st.markdown("Gerencie os produtos disponíveis para pedido em toda a rede.")
     
-    aba_cadastro, aba_consolidado = st.tabs(["🏷️ Catálogo de Produtos", "📊 Separação e Fechamento"])
-    
-    with aba_cadastro:
-        with st.container(border=True):
-            st.subheader("Gerenciar Produtos")
-            st.caption("Adicione novos produtos na última linha (com o '+') ou delete selecionando a linha e apertando 'Delete'.")
-            
-            df_produtos_editado = st.data_editor(
-                st.session_state['df_produtos'],
-                num_rows="dynamic",
-                column_config={
-                    "Código": st.column_config.NumberColumn("Código Interno", required=True, min_value=1, format="%d"),
-                    "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
-                    "Código Barra": st.column_config.TextColumn("Cód. Barras", required=True),
-                    "Marca": st.column_config.TextColumn("Fabricante/Marca", required=True)
-                },
-                hide_index=True,
-                use_container_width=False,
-                height=500
-            )
-            
-            st.write("<br>", unsafe_allow_html=True)
-            if st.button("🔄 Atualizar Catálogo para as Lojas", type="primary"):
+    with st.container(border=True):
+        st.caption("Adicione novos produtos na última linha (com o '+') ou delete selecionando a linha e apertando 'Delete'.")
+        
+        df_produtos_editado = st.data_editor(
+            st.session_state['df_produtos'],
+            num_rows="dynamic",
+            column_config={
+                "Código": st.column_config.NumberColumn("Código Interno", width=80, required=True, min_value=1, format="%d"),
+                "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
+                "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, required=True),
+                "Marca": st.column_config.TextColumn("Fabricante/Marca", width=100, required=True)
+            },
+            hide_index=True,
+            use_container_width=False,
+            height=600
+        )
+        
+        st.write("<br>", unsafe_allow_html=True)
+        col_salvar, col_vazia = st.columns([3, 7])
+        with col_salvar:
+            if st.button("🔄 Atualizar Catálogo para as Lojas", type="primary", use_container_width=True):
                 st.session_state['df_produtos'] = df_produtos_editado
                 sincronizar_tabelas()
                 st.success("✅ Novo catálogo sincronizado e disponível para todas as lojas em tempo real!")
                 st.rerun()
-
-    with aba_consolidado:
-        with st.container(border=True):
-            st.subheader("Consolidado Geral")
-            
-            df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
-            df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
-            
-            st.dataframe(
-                df_final, 
-                hide_index=True, 
-                use_container_width=False, 
-                height=450,
-                column_config={
-                    "Código": st.column_config.NumberColumn(format="%d"),
-                    "TOTAL GERAL": st.column_config.NumberColumn("TOTAL GERAL", format="**%d**")
-                }
-            )
-            
-            st.divider()
-            
-            col_exp, col_limpeza, col_vazia2 = st.columns([3, 3, 4])
-            with col_exp:
-                st.markdown("#### 📥 Exportar Tabela")
-                csv = df_final.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="⬇️ Download em CSV",
-                    data=csv,
-                    file_name='separacao_semanal_horti.csv',
-                    mime='text/csv'
-                )
-                
-            with col_limpeza:
-                st.markdown("#### 🧹 Fechamento Semanal")
-                if st.button("🚨 Limpar Lojas (Zerar Pedidos)"):
-                    st.session_state['df_pedidos'][LOJAS] = 0
-                    st.success("✅ Tabela limpa! Sistema pronto para nova semana.")
-                    st.rerun()
