@@ -2,48 +2,86 @@ import streamlit as st
 import pandas as pd
 
 # 1. CONFIGURAÇÃO DA PÁGINA
-st.set_page_config(page_title="Gestão de Pedidos - Horti Japonês", layout="wide")
+st.set_page_config(page_title="Gestão de Pedidos - Horti Japonês", page_icon="🍣", layout="wide", initial_sidebar_state="expanded")
+
+# --- ESTILIZAÇÃO CSS CUSTOMIZADA (MODERNA) ---
+st.markdown("""
+<style>
+    /* Estilização dos botões principais */
+    .stButton>button {
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 75, 75, 0.2);
+    }
+    
+    /* Suaviza as bordas dos containers */
+    div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 12px;
+        transition: box-shadow 0.3s ease;
+    }
+    div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Estilização da tela de Login */
+    .login-header {
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .login-subheader {
+        text-align: center;
+        color: #888;
+        margin-bottom: 2rem;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Lista de lojas (01 a 08)
 LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
 
 # ---------------------------------------------------------
-# SISTEMA DE LOGIN
+# SISTEMA DE LOGIN (VISUAL ATUALIZADO)
 # ---------------------------------------------------------
 if 'usuario_logado' not in st.session_state:
     st.session_state['usuario_logado'] = None
 
-# Se não estiver logado, exibe apenas a tela de login e para a execução
 if st.session_state['usuario_logado'] is None:
-    col1, col2, col3 = st.columns([1, 2, 1])
+    st.write("<br><br><br>", unsafe_allow_html=True) # Espaçamento
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+    
     with col2:
-        st.title("🔐 Acesso ao Sistema")
-        st.markdown("Selecione seu perfil para acessar os pedidos semanais.")
-        
-        usuarios_permitidos = ["Selecione..."] + ["Analista", "Supervisor"] + LOJAS
-        
-        usuario_selecionado = st.selectbox("Usuário:", usuarios_permitidos)
-        
-        if st.button("Entrar", type="primary", use_container_width=True):
-            if usuario_selecionado != "Selecione...":
-                st.session_state['usuario_logado'] = usuario_selecionado
-                st.rerun() 
-            else:
-                st.error("Por favor, selecione um usuário válido na lista.")
+        with st.container(border=True):
+            st.markdown('<div class="login-header">🍣 Portal de Pedidos</div>', unsafe_allow_html=True)
+            st.markdown('<div class="login-subheader">Horti Japonês • Molicenter</div>', unsafe_allow_html=True)
+            
+            usuarios_permitidos = ["Selecione..."] + ["Analista", "Supervisor"] + LOJAS
+            usuario_selecionado = st.selectbox("Selecione seu perfil de acesso:", usuarios_permitidos)
+            
+            st.write("<br>", unsafe_allow_html=True)
+            if st.button("🚀 Acessar Sistema", type="primary", use_container_width=True):
+                if usuario_selecionado != "Selecione...":
+                    st.session_state['usuario_logado'] = usuario_selecionado
+                    st.rerun() 
+                else:
+                    st.error("⚠️ Por favor, selecione um usuário válido na lista.")
     st.stop() 
 
-# Recupera quem está logado no momento
 usuario_atual = st.session_state['usuario_logado']
 
 # ---------------------------------------------------------
-# INICIALIZAÇÃO DE DADOS E CACHE
+# INICIALIZAÇÃO DE DADOS E CACHE (Mantido igual)
 # ---------------------------------------------------------
-# Limpeza de cache inteligente (força a atualização para os 23 itens e código de barras)
 limpar_cache = False
 if 'df_pedidos' in st.session_state:
     colunas_atuais = st.session_state['df_pedidos'].columns.tolist()
-    faltando_loja = [loja for loja in LOJAS if loja not in colunas_atuais]
-    if faltando_loja:
+    if any(loja not in colunas_atuais for loja in LOJAS):
         limpar_cache = True
 
 if 'df_produtos' in st.session_state:
@@ -51,12 +89,9 @@ if 'df_produtos' in st.session_state:
         limpar_cache = True
 
 if limpar_cache:
-    if 'df_pedidos' in st.session_state:
-        del st.session_state['df_pedidos']
-    if 'df_produtos' in st.session_state:
-        del st.session_state['df_produtos']
+    if 'df_pedidos' in st.session_state: del st.session_state['df_pedidos']
+    if 'df_produtos' in st.session_state: del st.session_state['df_produtos']
 
-# Carga dos 23 itens extraídos da planilha
 if 'df_produtos' not in st.session_state:
     produtos_iniciais = [
         {"Código": 521798, "Descrição": "Ampan Azuki C/6 Satsumaya", "Código Barra": "7897327901294", "Marca": "Satsumaya"},
@@ -109,118 +144,148 @@ def sincronizar_tabelas():
 sincronizar_tabelas()
 
 # ---------------------------------------------------------
-# INTERFACE DO USUÁRIO E ROTEAMENTO
+# MENU LATERAL (SIDEBAR)
 # ---------------------------------------------------------
-st.sidebar.markdown(f"👤 **Logado como:** `{usuario_atual}`")
-if st.sidebar.button("Sair / Logout"):
-    st.session_state['usuario_logado'] = None
-    st.rerun()
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3143/3143644.png", width=60) # Ícone decorativo
+    st.markdown(f"### Olá, **{usuario_atual}**")
+    st.caption("Sistema de Pedidos Integrado")
+    st.divider()
+    
+    acesso_total = usuario_atual in ["Analista", "Supervisor"]
 
-st.sidebar.divider()
-
-acesso_total = usuario_atual in ["Analista", "Supervisor"]
-
-if acesso_total:
-    perfil_navegacao = st.sidebar.radio("Menu de Navegação:", ["Painel Administrativo", "Visão das Lojas (Digitação)"])
-else:
-    perfil_navegacao = "Visão das Lojas (Digitação)"
-
-st.title("🍣 Sistema Central de Pedidos - Horti Japonês")
+    if acesso_total:
+        perfil_navegacao = st.radio("📍 Navegação:", ["Painel Administrativo", "Visão das Lojas"])
+    else:
+        perfil_navegacao = "Visão das Lojas"
+    
+    st.divider()
+    if st.button("🚪 Sair / Logout", use_container_width=True):
+        st.session_state['usuario_logado'] = None
+        st.rerun()
 
 # ---------------------------------------------------------
 # VISÃO DA LOJA (DIGITAÇÃO)
 # ---------------------------------------------------------
-if perfil_navegacao == "Visão das Lojas (Digitação)":
-    st.header("📋 Lançamento Semanal de Pedidos")
+if perfil_navegacao == "Visão das Lojas":
+    st.title("📋 Lançamento Semanal")
+    st.markdown("Preencha as quantidades necessárias para a sua loja.")
     
     if acesso_total:
-        loja_selecionada = st.selectbox("Selecione qual Loja deseja visualizar/editar:", LOJAS)
+        loja_selecionada = st.selectbox("👁️ Visão como (Selecione a Loja):", LOJAS)
     else:
         loja_selecionada = usuario_atual
     
     df_loja = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'][["Código", loja_selecionada]], on="Código")
     
-    st.info(f"O catálogo abaixo reflete as atualizações mais recentes. Insira os pedidos da **{loja_selecionada}**:")
-    
-    df_editado = st.data_editor(
-        df_loja,
-        column_config={
-            "Código": st.column_config.NumberColumn(disabled=True),
-            "Descrição": st.column_config.TextColumn(disabled=True),
-            "Código Barra": st.column_config.TextColumn("Cód. Barras", disabled=True),
-            "Marca": st.column_config.TextColumn(disabled=True),
-            loja_selecionada: st.column_config.NumberColumn("Qtd Pedido", min_value=0, step=1)
-        },
-        hide_index=True,
-        use_container_width=True,
-        height=600 # Aumentado para visualizar melhor os 23 itens
-    )
-    
-    if st.button("💾 Enviar/Atualizar Pedido", type="primary"):
-        for idx, row in df_editado.iterrows():
-            cod = row["Código"]
-            qtd = row[loja_selecionada]
-            st.session_state['df_pedidos'].loc[st.session_state['df_pedidos']["Código"] == cod, loja_selecionada] = qtd
-        st.success(f"Sucesso! Os dados da {loja_selecionada} foram gravados.")
+    # Card de Informação
+    with st.container(border=True):
+        st.info(f"💡 Editando catálogo para: **{loja_selecionada}**")
+        
+        # O Data Editor com altura ampliada
+        df_editado = st.data_editor(
+            df_loja,
+            column_config={
+                "Código": st.column_config.NumberColumn(disabled=True),
+                "Descrição": st.column_config.TextColumn(disabled=True),
+                "Código Barra": st.column_config.TextColumn("Cód. Barras", disabled=True),
+                "Marca": st.column_config.TextColumn(disabled=True),
+                loja_selecionada: st.column_config.NumberColumn("🛒 Qtd Pedido", min_value=0, step=1)
+            },
+            hide_index=True,
+            use_container_width=True,
+            height=600 
+        )
+        
+        # Cálculo de métricas para a loja
+        itens_com_pedido = (df_editado[loja_selecionada] > 0).sum()
+        total_itens = len(df_editado)
+        
+        st.divider()
+        col_metric, col_btn = st.columns([1, 1])
+        
+        with col_metric:
+            st.metric("Itens Preenchidos", f"{itens_com_pedido} / {total_itens}")
+            
+        with col_btn:
+            st.write("<br>", unsafe_allow_html=True) # Alinha o botão com a métrica
+            if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
+                for idx, row in df_editado.iterrows():
+                    cod = row["Código"]
+                    qtd = row[loja_selecionada]
+                    st.session_state['df_pedidos'].loc[st.session_state['df_pedidos']["Código"] == cod, loja_selecionada] = qtd
+                st.success(f"✅ Pedido da {loja_selecionada} salvo com sucesso no banco de dados!")
 
 # ---------------------------------------------------------
 # VISÃO DO SUPERVISOR / ANALISTA
 # ---------------------------------------------------------
 elif perfil_navegacao == "Painel Administrativo":
-    st.header("⚙️ Painel de Controle Integrado")
+    st.title("⚙️ Painel de Controle Integrado")
     
-    aba_cadastro, aba_consolidado = st.tabs(["✏️ Cadastrar/Editar Produtos", "📊 Visualizar e Fechar Pedidos"])
+    aba_cadastro, aba_consolidado = st.tabs(["🏷️ Catálogo de Produtos", "📊 Separação e Fechamento"])
     
     with aba_cadastro:
-        st.subheader("Gerenciamento do Catálogo Geral")
-        st.caption("Adicione novos produtos na última linha ou delete selecionando a linha e apertando 'Delete'.")
-        
-        df_produtos_editado = st.data_editor(
-            st.session_state['df_produtos'],
-            num_rows="dynamic",
-            column_config={
-                "Código": st.column_config.NumberColumn("Código Interno", required=True, min_value=1),
-                "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
-                "Código Barra": st.column_config.TextColumn("Cód. Barras", required=True),
-                "Marca": st.column_config.TextColumn("Fabricante/Marca", required=True)
-            },
-            hide_index=True,
-            use_container_width=True,
-            height=600
-        )
-        
-        if st.button("🔄 Salvar e Disponibilizar Novo Catálogo", type="primary"):
-            st.session_state['df_produtos'] = df_produtos_editado
-            sincronizar_tabelas()
-            st.success("Catálogo atualizado! Todas as visões das lojas foram modificadas.")
-            st.rerun()
-
-    with aba_consolidado:
-        st.subheader("Painel Geral de Separação")
-        
-        df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
-        df_final["Total Consolidado"] = df_final[LOJAS].sum(axis=1)
-        
-        st.dataframe(df_final, hide_index=True, use_container_width=True, height=600)
-        
-        st.divider()
-        col_exp, col_limpeza = st.columns(2)
-        
-        with col_exp:
-            st.markdown("### 📥 Exportação")
-            csv = df_final.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download dos Pedidos (CSV)",
-                data=csv,
-                file_name='separacao_semanal_horti.csv',
-                mime='text/csv'
+        with st.container(border=True):
+            st.subheader("Gerenciar Produtos")
+            st.caption("Adicione novos produtos na última linha (com o '+') ou delete selecionando a linha e apertando 'Delete'.")
+            
+            df_produtos_editado = st.data_editor(
+                st.session_state['df_produtos'],
+                num_rows="dynamic",
+                column_config={
+                    "Código": st.column_config.NumberColumn("Código Interno", required=True, min_value=1),
+                    "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
+                    "Código Barra": st.column_config.TextColumn("Cód. Barras", required=True),
+                    "Marca": st.column_config.TextColumn("Fabricante/Marca", required=True)
+                },
+                hide_index=True,
+                use_container_width=True,
+                height=500
             )
             
-        with col_limpeza:
-            st.markdown("### 🧹 Nova Semana")
-            st.warning("Zera as quantidades digitadas, mas mantém o cadastro.")
-            
-            if st.button("🚨 Limpar Pedidos das Lojas"):
-                st.session_state['df_pedidos'][LOJAS] = 0
-                st.success("Tabela limpa! Pronta para a próxima semana.")
+            if st.button("🔄 Atualizar Catálogo para as Lojas", type="primary"):
+                st.session_state['df_produtos'] = df_produtos_editado
+                sincronizar_tabelas()
+                st.success("✅ Novo catálogo sincronizado e disponível para todas as lojas em tempo real!")
                 st.rerun()
+
+    with aba_consolidado:
+        with st.container(border=True):
+            st.subheader("Consolidado Geral")
+            
+            df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
+            df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
+            
+            # Formatação visual da coluna total
+            st.dataframe(
+                df_final, 
+                hide_index=True, 
+                use_container_width=True, 
+                height=450,
+                column_config={
+                    "TOTAL GERAL": st.column_config.NumberColumn("TOTAL GERAL", format="**%d**")
+                }
+            )
+            
+            st.divider()
+            
+            col_exp, col_limpeza = st.columns(2)
+            with col_exp:
+                st.markdown("#### 📥 Exportar Tabela")
+                st.caption("Baixe o resultado para imprimir ou levar ao Excel.")
+                csv = df_final.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="⬇️ Download em CSV",
+                    data=csv,
+                    file_name='separacao_semanal_horti.csv',
+                    mime='text/csv',
+                    use_container_width=True
+                )
+                
+            with col_limpeza:
+                st.markdown("#### 🧹 Fechamento Semanal")
+                st.caption("Zera a digitação das lojas para iniciar o novo ciclo.")
+                if st.button("🚨 Limpar Lojas (Zerar Pedidos)", use_container_width=True):
+                    st.session_state['df_pedidos'][LOJAS] = 0
+                    st.success("✅ Tabela limpa! Sistema pronto para nova semana.")
+                    st.rerun()
