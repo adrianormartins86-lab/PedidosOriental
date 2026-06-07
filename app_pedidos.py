@@ -513,12 +513,12 @@ if perfil_navegacao == "Separação e Fechamento":
                 use_container_width=True
             )
 
-        # Exporta o dataframe para o Excel dentro do buffer
+# Cria um buffer de bytes na memória
+buffer = io.BytesIO()
+# Exporta o dataframe para o Excel dentro do buffer
 df_editado_admin.to_excel(buffer, index=False, sheet_name='Separacao')
-
 # Volta o ponteiro do buffer para o início
 buffer.seek(0)
-
 # Botão de download
 st.download_button(
     label='⬇️ Exportar Excel',
