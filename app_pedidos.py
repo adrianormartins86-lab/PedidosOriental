@@ -90,7 +90,9 @@ if 'df_pedidos' in st.session_state:
         limpar_cache = True
 
 if 'df_produtos' in st.session_state:
-    if 'Código Barra' not in st.session_state['df_produtos'].columns or len(st.session_state['df_produtos']) < 23:
+    colunas_produtos = st.session_state['df_produtos'].columns.tolist()
+    # Limpa o cache se as colunas de visibilidade das lojas não existirem no cadastro de produtos
+    if 'Código Barra' not in colunas_produtos or len(st.session_state['df_produtos']) < 23 or any(loja not in colunas_produtos for loja in LOJAS):
         limpar_cache = True
 
 if limpar_cache:
@@ -123,7 +125,12 @@ if 'df_produtos' not in st.session_state:
         {"Código": 524722, "Descrição": "Tofu 1kg Agronippo Nigari Momen", "Código Barra": "7896293808156", "Marca": "Agronippo"},
         {"Código": 524731, "Descrição": "Tofu 500g Agronippo Tradicional", "Código Barra": "7896293802048", "Marca": "Agronippo"}
     ]
-    st.session_state['df_produtos'] = pd.DataFrame(produtos_iniciais)
+    df_prod_inicial = pd.DataFrame(produtos_iniciais)
+    # Adiciona uma coluna de visibilidade (True/False) para cada loja, padrão True (visível)
+    for loja in LOJAS:
+        df_prod_inicial[loja] = True
+        
+    st.session_state['df_produtos'] = df_prod_inicial
 
 if 'df_pedidos' not in st.session_state:
     df_p = pd.DataFrame(columns=["Código"] + LOJAS)
@@ -179,10 +186,11 @@ if perfil_navegacao == "Separação e Fechamento":
     st.markdown("Consolidado Geral de Pedidos. Como administrador, você pode editar diretamente as quantidades de qualquer loja.")
     
     with st.container(border=True):
-        df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
+        # Filtra apenas as colunas base de produtos para não conflitar as colunas booleanas das lojas com as quantidades
+        df_produtos_base = st.session_state['df_produtos'][["Código", "Descrição", "Código Barra", "Marca"]]
+        df_final = pd.merge(df_produtos_base, st.session_state['df_pedidos'], on="Código")
         df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
         
-        # Formatação dinâmica das colunas: Lojas agora são editáveis
         colunas_config_consolidado = {
             "Código": st.column_config.NumberColumn(width=80, format="%d", disabled=True),
             "Descrição": st.column_config.TextColumn(disabled=True),
@@ -192,10 +200,8 @@ if perfil_navegacao == "Separação e Fechamento":
         }
         
         for loja in LOJAS:
-            # Ao remover 'disabled=True', a coluna fica livre para edição
             colunas_config_consolidado[loja] = st.column_config.NumberColumn(loja, format="%d", min_value=0, step=1)
         
-        # O administrador digita os ajustes nesta tabela
         df_editado_admin = st.data_editor(
             df_final, 
             hide_index=True, 
@@ -218,7 +224,6 @@ if perfil_navegacao == "Separação e Fechamento":
         col_exp, col_limpeza, col_vazia2 = st.columns([3, 3, 4])
         with col_exp:
             st.markdown("#### 📥 Exportar Tabela")
-            # Gera o CSV com os dados da tela (mesmo que ainda não tenham sido salvos)
             csv = df_editado_admin.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="⬇️ Download em CSV",
@@ -256,7 +261,11 @@ elif perfil_navegacao == "Visão das Lojas":
 
     st.markdown("Preencha as quantidades necessárias para a sua loja.")
     
-    df_loja = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'][["Código", loja_selecionada]], on="Código")
+    # 1. Filtra o cadastro de produtos exibindo apenas aqueles onde a coluna da loja está como True (marcada)
+    df_produtos_visiveis = st.session_state['df_produtos'][st.session_state['df_produtos'][loja_selecionada] == True]
+    
+    # 2. Faz o merge apenas com os produtos autorizados para esta loja
+    df_loja = pd.merge(df_produtos_visiveis[["Código", "Descrição", "Código Barra", "Marca"]], st.session_state['df_pedidos'][["Código", loja_selecionada]], on="Código")
     
     with st.container(border=True):
         st.info("💡 Clique na coluna 'Qtde' para digitar.")
@@ -298,20 +307,26 @@ elif perfil_navegacao == "Visão das Lojas":
 # ---------------------------------------------------------
 elif perfil_navegacao == "Catálogo de Produtos":
     st.title("🏷️ Catálogo de Produtos")
-    st.markdown("Gerencie os produtos disponíveis para pedido em toda a rede.")
+    st.markdown("Gerencie os produtos disponíveis e marque quais lojas podem visualizar cada item.")
     
     with st.container(border=True):
         st.caption("Adicione novos produtos na última linha (com o '+') ou delete selecionando a linha e apertando 'Delete'.")
         
+        # Configuração dinâmica das colunas do catálogo (adiciona as checkboxes das lojas)
+        config_catalogo = {
+            "Código": st.column_config.NumberColumn("Código Interno", width=80, required=True, min_value=1, format="%d"),
+            "Descrição": st.column_config.TextColumn("Descrição do Item", width=300, required=True),
+            "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, required=True),
+            "Marca": st.column_config.TextColumn("Fabricante/Marca", width=100, required=True)
+        }
+        
+        for loja in LOJAS:
+            config_catalogo[loja] = st.column_config.CheckboxColumn(f"Exibir: {loja}", default=True)
+        
         df_produtos_editado = st.data_editor(
             st.session_state['df_produtos'],
             num_rows="dynamic",
-            column_config={
-                "Código": st.column_config.NumberColumn("Código Interno", width=80, required=True, min_value=1, format="%d"),
-                "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
-                "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, required=True),
-                "Marca": st.column_config.TextColumn("Fabricante/Marca", width=100, required=True)
-            },
+            column_config=config_catalogo,
             hide_index=True,
             use_container_width=False,
             height=600
@@ -320,8 +335,8 @@ elif perfil_navegacao == "Catálogo de Produtos":
         st.write("<br>", unsafe_allow_html=True)
         col_salvar, col_vazia = st.columns([3, 7])
         with col_salvar:
-            if st.button("🔄 Atualizar Catálogo para as Lojas", type="primary", use_container_width=True):
+            if st.button("🔄 Atualizar Catálogo e Permissões", type="primary", use_container_width=True):
                 st.session_state['df_produtos'] = df_produtos_editado
                 sincronizar_tabelas()
-                st.success("✅ Novo catálogo sincronizado e disponível para todas as lojas em tempo real!")
+                st.success("✅ Catálogo e permissões atualizados em tempo real para todas as lojas!")
                 st.rerun()
