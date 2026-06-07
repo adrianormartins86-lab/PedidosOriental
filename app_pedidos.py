@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+import io
 
 # ─────────────────────────────────────────────
 # CONFIGURAÇÃO DA PÁGINA
@@ -367,29 +367,29 @@ if limpar_cache:
 
 if 'df_produtos' not in st.session_state:
     produtos_iniciais = [
-        {"Código": 521798, "Descrição": "Ampan Azuki C/6 Satsumaya",                   "Código Barra": "7897327901294", "Marca": "Satsumaya"},
-        {"Código": 520504, "Descrição": "Kamaboko 200g Agronippo",                      "Código Barra": "7896293804165", "Marca": "Agronippo"},
-        {"Código": 521150, "Descrição": "Kamaboko 200g Kai-Ho Agronippo",               "Código Barra": "7896293804110", "Marca": "Agronippo"},
-        {"Código": 521974, "Descrição": "Lokyozuke Cebolinha 200g Marunaka Cons",       "Código Barra": "7897231100134", "Marca": "Agronippo"},
-        {"Código": 533623, "Descrição": "Massa Gobomaki Kai-Ho 200g",                   "Código Barra": "7896293804134", "Marca": "Agronippo"},
-        {"Código": 53662,  "Descrição": "Massa Konnyaku 350g C/Alga",                   "Código Barra": "7896293805100", "Marca": "Agronippo"},
+        {"Código": 521798, "Descrição": "Ampan Azuki C/6 Satsumaya",                    "Código Barra": "7897327901294", "Marca": "Satsumaya"},
+        {"Código": 520504, "Descrição": "Kamaboko 200g Agronippo",                       "Código Barra": "7896293804165", "Marca": "Agronippo"},
+        {"Código": 521150, "Descrição": "Kamaboko 200g Kai-Ho Agronippo",                "Código Barra": "7896293804110", "Marca": "Agronippo"},
+        {"Código": 521974, "Descrição": "Lokyozuke Cebolinha 200g Marunaka Cons",        "Código Barra": "7897231100134", "Marca": "Agronippo"},
+        {"Código": 533623, "Descrição": "Massa Gobomaki Kai-Ho 200g",                    "Código Barra": "7896293804134", "Marca": "Agronippo"},
+        {"Código": 53662,  "Descrição": "Massa Konnyaku 350g C/Alga",                    "Código Barra": "7896293805100", "Marca": "Agronippo"},
         {"Código": 524768, "Descrição": "Massa Shirataki 200g Agronippo Noodles Konjac","Código Barra": "7898944092266", "Marca": "Agronippo"},
         {"Código": 583497, "Descrição": "Massa Shirataki 200g Hyde Alimentos Noodles",  "Código Barra": "7898944092211", "Marca": "Hyde Alimentos"},
-        {"Código": 577362, "Descrição": "Mirinzuke 200g Conserva De Nabo",              "Código Barra": "7896101500265", "Marca": "Agronippo"},
-        {"Código": 520911, "Descrição": "Narutomakii Kai.Ho 200g",                      "Código Barra": "7896293804158", "Marca": "Agronippo"},
-        {"Código": 141820, "Descrição": "Nippo Kyoka Natto 100g",                       "Código Barra": "7896293805001", "Marca": "Agronippo"},
-        {"Código": 524713, "Descrição": "Nippo Shirataki 200g",                         "Código Barra": "7896293805117", "Marca": "Agronippo"},
+        {"Código": 577362, "Descrição": "Mirinzuke 200g Conserva De Nabo",               "Código Barra": "7896101500265", "Marca": "Agronippo"},
+        {"Código": 520911, "Descrição": "Narutomakii Kai.Ho 200g",                       "Código Barra": "7896293804158", "Marca": "Agronippo"},
+        {"Código": 141820, "Descrição": "Nippo Kyoka Natto 100g",                        "Código Barra": "7896293805001", "Marca": "Agronippo"},
+        {"Código": 524713, "Descrição": "Nippo Shirataki 200g",                          "Código Barra": "7896293805117", "Marca": "Agronippo"},
         {"Código": 139940, "Descrição": "Shogazuke 245g Beni Shoga Gengibre Ralado",    "Código Barra": "7897231100042", "Marca": "Agronippo"},
-        {"Código": 55406,  "Descrição": "Sushi Ague 110g Agronippo",                    "Código Barra": "7896293803014", "Marca": "Agronippo"},
-        {"Código": 608981, "Descrição": "Takuan 200g Haruko Amarelo",                   "Código Barra": "0798190064482", "Marca": "Haruko"},
-        {"Código": 521965, "Descrição": "Takuan 500g Haruko Amarelo",                   "Código Barra": "0798190022024", "Marca": "Haruko"},
-        {"Código": 100221, "Descrição": "Takuwan 200g Takaki Pequeno",                  "Código Barra": "7896101500272", "Marca": "Ceasa Box"},
-        {"Código": 176507, "Descrição": "Takuwan 500g Takaki Grande",                   "Código Barra": "7896101500234", "Marca": "Ceasa Box"},
-        {"Código": 530112, "Descrição": "Tempura 200g Kai Ho",                          "Código Barra": "7896293804127", "Marca": "Agronippo"},
-        {"Código": 53679,  "Descrição": "Tikuwa 200g Agronippo",                        "Código Barra": "7896293804103", "Marca": "Agronippo"},
-        {"Código": 577380, "Descrição": "Tiocenzuke 245 conserva Pic Nabo Acelga",      "Código Barra": "7897231100219", "Marca": "Agronippo"},
-        {"Código": 524722, "Descrição": "Tofu 1kg Agronippo Nigari Momen",              "Código Barra": "7896293808156", "Marca": "Agronippo"},
-        {"Código": 524731, "Descrição": "Tofu 500g Agronippo Tradicional",              "Código Barra": "7896293802048", "Marca": "Agronippo"},
+        {"Código": 55406,  "Descrição": "Sushi Ague 110g Agronippo",                     "Código Barra": "7896293803014", "Marca": "Agronippo"},
+        {"Código": 608981, "Descrição": "Takuan 200g Haruko Amarelo",                    "Código Barra": "0798190064482", "Marca": "Haruko"},
+        {"Código": 521965, "Descrição": "Takuan 500g Haruko Amarelo",                    "Código Barra": "0798190022024", "Marca": "Haruko"},
+        {"Código": 100221, "Descrição": "Takuwan 200g Takaki Pequeno",                   "Código Barra": "7896101500272", "Marca": "Ceasa Box"},
+        {"Código": 176507, "Descrição": "Takuwan 500g Takaki Grande",                    "Código Barra": "7896101500234", "Marca": "Ceasa Box"},
+        {"Código": 530112, "Descrição": "Tempura 200g Kai Ho",                           "Código Barra": "7896293804127", "Marca": "Agronippo"},
+        {"Código": 53679,  "Descrição": "Tikuwa 200g Agronippo",                         "Código Barra": "7896293804103", "Marca": "Agronippo"},
+        {"Código": 577380, "Descrição": "Tiocenzuke 245 conserva Pic Nabo Acelga",       "Código Barra": "7897231100219", "Marca": "Agronippo"},
+        {"Código": 524722, "Descrição": "Tofu 1kg Agronippo Nigari Momen",               "Código Barra": "7896293808156", "Marca": "Agronippo"},
+        {"Código": 524731, "Descrição": "Tofu 500g Agronippo Tradicional",               "Código Barra": "7896293802048", "Marca": "Agronippo"},
     ]
     df_init = pd.DataFrame(produtos_iniciais)
     for loja in LOJAS:
@@ -494,7 +494,8 @@ if perfil_navegacao == "Separação e Fechamento":
 
         st.divider()
 
-        col_salvar, col_exp, col_limpa, _ = st.columns([2, 2, 2, 4])
+        # Ajuste de layout para comportar o botão do Excel
+        col_salvar, col_csv, col_excel, col_limpa, _ = st.columns([2.5, 1.5, 1.5, 2, 2.5])
 
         with col_salvar:
             if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
@@ -503,13 +504,27 @@ if perfil_navegacao == "Separação e Fechamento":
                 st.success("✅ Ajustes salvos com sucesso!")
                 st.rerun()
 
-        with col_exp:
+        with col_csv:
             csv = df_editado_admin.to_csv(index=False).encode("utf-8")
             st.download_button(
-                label="⬇️ Exportar CSV",
+                label="⬇️ CSV",
                 data=csv,
                 file_name="separacao_semanal_horti.csv",
                 mime="text/csv",
+                use_container_width=True
+            )
+            
+        with col_excel:
+            # Geração do arquivo Excel em memória
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                df_editado_admin.to_excel(writer, index=False, sheet_name='Pedidos')
+            
+            st.download_button(
+                label="⬇️ Excel",
+                data=buffer.getvalue(),
+                file_name="separacao_semanal_horti.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
 
