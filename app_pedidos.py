@@ -49,7 +49,7 @@ if st.session_state['usuario_logado'] is None:
             with h_col1:
                 st.markdown("""
                     <h2 style='margin-bottom: 0px; padding-bottom: 0px;'>Portal de Pedidos</h2>
-                    <p style='color: #a0aec0; font-size: 15px; margin-top: 5px;'>Horti Japonês - Molicenter</p>
+                    <p style='color: #a0aec0; font-size: 15px; margin-top: 5px;'>Horti Oriental - Molicenter</p>
                 """, unsafe_allow_html=True)
             with h_col2:
                 st.write("") 
