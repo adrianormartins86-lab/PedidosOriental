@@ -183,7 +183,7 @@ if perfil_navegacao == "Visão das Lojas":
     with col_logout:
         st.write("<br>", unsafe_allow_html=True)
         if not acesso_total: 
-            if st.button("🚪 Sair", use_container_width=True):
+            if st.button("🚪 Sair"):
                 st.session_state['usuario_logado'] = None
                 st.rerun()
 
@@ -192,9 +192,8 @@ if perfil_navegacao == "Visão das Lojas":
     df_loja = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'][["Código", loja_selecionada]], on="Código")
     
     with st.container(border=True):
-        st.info("💡 Clique na coluna 'Qtd Pedido' para digitar.")
+        st.info("💡 Clique na coluna 'Qtde' para digitar.")
         
-        # O SEGREDO ESTÁ AQUI: use_container_width=False e sem metragens fixas de colunas!
         df_editado = st.data_editor(
             df_loja,
             column_config={
@@ -202,7 +201,8 @@ if perfil_navegacao == "Visão das Lojas":
                 "Descrição": st.column_config.TextColumn(disabled=True),
                 "Código Barra": st.column_config.TextColumn("Cód. Barras", disabled=True),
                 "Marca": st.column_config.TextColumn(disabled=True),
-                loja_selecionada: st.column_config.NumberColumn("🛒 Qtd Pedido", min_value=0, step=1)
+                # Nome da coluna ajustado para "Qtde"
+                loja_selecionada: st.column_config.NumberColumn("🛒 Qtde", min_value=0, step=1)
             },
             hide_index=True,
             use_container_width=False, 
@@ -213,14 +213,16 @@ if perfil_navegacao == "Visão das Lojas":
         total_itens = len(df_editado)
         
         st.divider()
-        col_metric, col_btn = st.columns([1, 1])
+        # Ajuste nas proporções das colunas para o botão ficar num tamanho legal
+        col_metric, col_btn, col_vazia = st.columns([2, 3, 5])
         
         with col_metric:
             st.metric("Itens Preenchidos", f"{itens_com_pedido} / {total_itens}")
             
         with col_btn:
             st.write("<br>", unsafe_allow_html=True) 
-            if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
+            # Removido o use_container_width=True para o botão não esticar
+            if st.button("💾 Salvar Pedido da Semana", type="primary"):
                 for idx, row in df_editado.iterrows():
                     cod = row["Código"]
                     qtd = row[loja_selecionada]
@@ -240,7 +242,6 @@ elif perfil_navegacao == "Painel Administrativo":
             st.subheader("Gerenciar Produtos")
             st.caption("Adicione novos produtos na última linha (com o '+') ou delete selecionando a linha e apertando 'Delete'.")
             
-            # Aqui também aplicamos o use_container_width=False
             df_produtos_editado = st.data_editor(
                 st.session_state['df_produtos'],
                 num_rows="dynamic",
@@ -255,6 +256,8 @@ elif perfil_navegacao == "Painel Administrativo":
                 height=500
             )
             
+            # Botão ajustado para não esticar
+            st.write("<br>", unsafe_allow_html=True)
             if st.button("🔄 Atualizar Catálogo para as Lojas", type="primary"):
                 st.session_state['df_produtos'] = df_produtos_editado
                 sincronizar_tabelas()
@@ -268,7 +271,6 @@ elif perfil_navegacao == "Painel Administrativo":
             df_final = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'], on="Código")
             df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
             
-            # E no dataframe final também!
             st.dataframe(
                 df_final, 
                 hide_index=True, 
@@ -282,23 +284,21 @@ elif perfil_navegacao == "Painel Administrativo":
             
             st.divider()
             
-            col_exp, col_limpeza = st.columns(2)
+            # Ajuste de layout para os botões finais do Administrador também ficarem proporcionais
+            col_exp, col_limpeza, col_vazia2 = st.columns([3, 3, 4])
             with col_exp:
                 st.markdown("#### 📥 Exportar Tabela")
-                st.caption("Baixe o resultado para imprimir ou levar ao Excel.")
                 csv = df_final.to_csv(index=False).encode('utf-8')
                 st.download_button(
                     label="⬇️ Download em CSV",
                     data=csv,
                     file_name='separacao_semanal_horti.csv',
-                    mime='text/csv',
-                    use_container_width=True
+                    mime='text/csv'
                 )
                 
             with col_limpeza:
                 st.markdown("#### 🧹 Fechamento Semanal")
-                st.caption("Zera a digitação das lojas para iniciar o novo ciclo.")
-                if st.button("🚨 Limpar Lojas (Zerar Pedidos)", use_container_width=True):
+                if st.button("🚨 Limpar Lojas (Zerar Pedidos)"):
                     st.session_state['df_pedidos'][LOJAS] = 0
                     st.success("✅ Tabela limpa! Sistema pronto para nova semana.")
                     st.rerun()
