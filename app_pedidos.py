@@ -570,7 +570,7 @@ elif perfil_navegacao == "Visão das Lojas":
         st.session_state['df_produtos'][loja_selecionada] == True
     ]
     df_loja = pd.merge(
-        df_visiveis[["Código","Descrição","Código Barra","Marca"]],
+        df_visiveis[["Código","Descrição"]],
         st.session_state['df_pedidos'][["Código", loja_selecionada]],
         on="Código"
     )
