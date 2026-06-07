@@ -165,7 +165,6 @@ if acesso_total:
             st.session_state['usuario_logado'] = None
             st.rerun()
 else:
-    # Se for loja, trava na visão principal e não carrega a barra lateral
     perfil_navegacao = "Visão das Lojas"
 
 # ---------------------------------------------------------
@@ -173,38 +172,39 @@ else:
 # ---------------------------------------------------------
 if perfil_navegacao == "Visão das Lojas":
     
-    # Cabeçalho adaptado para Lojas (com botão de logout no canto)
+    # 1. Definir quem é a loja ativa ANTES de carregar o título
+    if acesso_total:
+        loja_selecionada = st.selectbox("👁️ Visão como (Selecione a Loja):", LOJAS)
+    else:
+        loja_selecionada = usuario_atual
+    
+    # 2. Cabeçalho Dinâmico
     col_titulo, col_logout = st.columns([8, 2])
     with col_titulo:
-        st.title("📋 Lançamento Semanal")
+        st.title(f"📋 {loja_selecionada} : Pedidos FLV - Oriental")
     with col_logout:
         st.write("<br>", unsafe_allow_html=True)
-        if not acesso_total: # Mostra o botão de sair aqui apenas se a barra lateral não existir
+        if not acesso_total: 
             if st.button("🚪 Sair", use_container_width=True):
                 st.session_state['usuario_logado'] = None
                 st.rerun()
 
     st.markdown("Preencha as quantidades necessárias para a sua loja.")
     
-    if acesso_total:
-        loja_selecionada = st.selectbox("👁️ Visão como (Selecione a Loja):", LOJAS)
-    else:
-        loja_selecionada = usuario_atual
-    
     df_loja = pd.merge(st.session_state['df_produtos'], st.session_state['df_pedidos'][["Código", loja_selecionada]], on="Código")
     
     with st.container(border=True):
-        st.info(f"💡 Editando catálogo para: **{loja_selecionada}**")
+        st.info("💡 Clique na coluna 'Qtd Pedido' para digitar.")
         
-        # Data Editor com larguras otimizadas para Mobile
+        # Data Editor com larguras restritas em PIXELS
         df_editado = st.data_editor(
             df_loja,
             column_config={
-                "Código": st.column_config.NumberColumn(width="small", disabled=True),
-                "Descrição": st.column_config.TextColumn(width="large", disabled=True),
-                "Código Barra": st.column_config.TextColumn("Cód. Barras", width="medium", disabled=True),
-                "Marca": st.column_config.TextColumn(width="small", disabled=True),
-                loja_selecionada: st.column_config.NumberColumn("🛒 Qtd Pedido", width="small", min_value=0, step=1)
+                "Código": st.column_config.NumberColumn(width=80, disabled=True, format="%d"),
+                "Descrição": st.column_config.TextColumn(disabled=True), # Sem largura fixa para expandir livremente
+                "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, disabled=True),
+                "Marca": st.column_config.TextColumn(width=100, disabled=True),
+                loja_selecionada: st.column_config.NumberColumn("🛒 Qtd Pedido", width=95, min_value=0, step=1)
             },
             hide_index=True,
             use_container_width=True,
@@ -242,15 +242,14 @@ elif perfil_navegacao == "Painel Administrativo":
             st.subheader("Gerenciar Produtos")
             st.caption("Adicione novos produtos na última linha (com o '+') ou delete selecionando a linha e apertando 'Delete'.")
             
-            # Larguras ajustadas aqui também para padronizar
             df_produtos_editado = st.data_editor(
                 st.session_state['df_produtos'],
                 num_rows="dynamic",
                 column_config={
-                    "Código": st.column_config.NumberColumn("Código Interno", width="small", required=True, min_value=1),
-                    "Descrição": st.column_config.TextColumn("Descrição do Item", width="large", required=True),
-                    "Código Barra": st.column_config.TextColumn("Cód. Barras", width="medium", required=True),
-                    "Marca": st.column_config.TextColumn("Fabricante/Marca", width="small", required=True)
+                    "Código": st.column_config.NumberColumn("Código Interno", width=80, required=True, min_value=1, format="%d"),
+                    "Descrição": st.column_config.TextColumn("Descrição do Item", required=True),
+                    "Código Barra": st.column_config.TextColumn("Cód. Barras", width=120, required=True),
+                    "Marca": st.column_config.TextColumn("Fabricante/Marca", width=100, required=True)
                 },
                 hide_index=True,
                 use_container_width=True,
@@ -276,6 +275,7 @@ elif perfil_navegacao == "Painel Administrativo":
                 use_container_width=True, 
                 height=450,
                 column_config={
+                    "Código": st.column_config.NumberColumn(width=80, format="%d"),
                     "TOTAL GERAL": st.column_config.NumberColumn("TOTAL GERAL", format="**%d**")
                 }
             )
