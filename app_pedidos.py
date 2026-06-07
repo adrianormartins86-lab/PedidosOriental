@@ -4,8 +4,8 @@ import pandas as pd
 # 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(page_title="Gestão de Pedidos - Horti Japonês", layout="wide")
 
-# Lista de lojas exata
-LOJAS = ["Loja 01", "Loja 02", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]import streamlit as st
+# Lista de lojas corrigida (01 a 08)
+LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]import streamlit as st
 import pandas as pd
 
 # 1. CONFIGURAÇÃO DA PÁGINA
