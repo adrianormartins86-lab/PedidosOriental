@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
+from streamlit_gsheets import GSheetsConnection
 
 # ─────────────────────────────────────────────
 # CONFIGURAÇÃO DA PÁGINA
@@ -9,7 +10,7 @@ st.set_page_config(
     page_title="Gestão de Pedidos - Horti Oriental",
     page_icon="🍣",
     layout="wide",
-    initial_sidebar_state="expanded"  # será sobrescrito via CSS para lojas
+    initial_sidebar_state="expanded" 
 )
 
 # ─────────────────────────────────────────────
@@ -155,10 +156,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 /* ── Divider ── */
 hr { border-color: var(--border) !important; }
 
-/* ── Títulos ── */
-h1 { color: var(--text-primary) !important; font-weight: 700 !important; letter-spacing: -.5px; }
-h2, h3 { color: var(--text-primary) !important; }
-
 /* ── Badge de loja (sidebar) ── */
 .loja-badge {
     display: inline-block;
@@ -197,29 +194,6 @@ h2, h3 { color: var(--text-primary) !important; }
     margin-top: 2px;
 }
 
-/* ── Seção de ação (download, limpar) ── */
-.action-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-}
-.action-section h4 {
-    color: var(--text-muted) !important;
-    font-size: 11px !important;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 10px !important;
-}
-
-/* ── Login box ── */
-.login-hint {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-align: center;
-    margin-top: 10px;
-}
-
 /* ── Ocultar sidebar para lojas ── */
 .sidebar-hidden section[data-testid="stSidebar"],
 .sidebar-hidden [data-testid="collapsedControl"] {
@@ -247,16 +221,6 @@ h2, h3 { color: var(--text-primary) !important; }
     align-items: center;
     gap: 12px;
 }
-.topbar-badge {
-    background: var(--green-mid);
-    border: 1px solid var(--green-accent);
-    color: var(--green-bright);
-    font-size: 13px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-family: 'IBM Plex Mono', monospace;
-}
 .topbar-title {
     font-size: 18px;
     font-weight: 700;
@@ -271,9 +235,84 @@ h2, h3 { color: var(--text-primary) !important; }
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# CONSTANTES
+# CONSTANTES E PRODUTOS INICIAIS
 # ─────────────────────────────────────────────
 LOJAS = ["Loja 01", "Loja 02", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
+
+produtos_iniciais = [
+    {"Código": 521798, "Descrição": "Ampan Azuki C/6 Satsumaya",                    "Código Barra": "7897327901294", "Marca": "Satsumaya"},
+    {"Código": 520504, "Descrição": "Kamaboko 200g Agronippo",                        "Código Barra": "7896293804165", "Marca": "Agronippo"},
+    {"Código": 521150, "Descrição": "Kamaboko 200g Kai-Ho Agronippo",                 "Código Barra": "7896293804110", "Marca": "Agronippo"},
+    {"Código": 521974, "Descrição": "Lokyozuke Cebolinha 200g Marunaka Cons",        "Código Barra": "7897231100134", "Marca": "Agronippo"},
+    {"Código": 533623, "Descrição": "Massa Gobomaki Kai-Ho 200g",                     "Código Barra": "7896293804134", "Marca": "Agronippo"},
+    {"Código": 53662,  "Descrição": "Massa Konnyaku 350g C/Alga",                     "Código Barra": "7896293805100", "Marca": "Agronippo"},
+    {"Código": 524768, "Descrição": "Massa Shirataki 200g Agronippo Noodles Konjac","Código Barra": "7898944092266", "Marca": "Agronippo"},
+    {"Código": 583497, "Descrição": "Massa Shirataki 200g Hyde Alimentos Noodles",  "Código Barra": "7898944092211", "Marca": "Hyde Alimentos"},
+    {"Código": 577362, "Descrição": "Mirinzuke 200g Conserva De Nabo",               "Código Barra": "7896101500265", "Marca": "Agronippo"},
+    {"Código": 520911, "Descrição": "Narutomakii Kai.Ho 200g",                        "Código Barra": "7896293804158", "Marca": "Agronippo"},
+    {"Código": 141820, "Descrição": "Nippo Kyoka Natto 100g",                         "Código Barra": "7896293805001", "Marca": "Agronippo"},
+    {"Código": 524713, "Descrição": "Nippo Shirataki 200g",                           "Código Barra": "7896293805117", "Marca": "Agronippo"},
+    {"Código": 139940, "Descrição": "Shogazuke 245g Beni Shoga Gengibre Ralado",    "Código Barra": "7897231100042", "Marca": "Agronippo"},
+    {"Código": 55406,  "Descrição": "Sushi Ague 110g Agronippo",                      "Código Barra": "7896293803014", "Marca": "Agronippo"},
+    {"Código": 608981, "Descrição": "Takuan 200g Haruko Amarelo",                     "Código Barra": "0798190064482", "Marca": "Haruko"},
+    {"Código": 521965, "Descrição": "Takuan 500g Haruko Amarelo",                     "Código Barra": "0798190022024", "Marca": "Haruko"},
+    {"Código": 100221, "Descrição": "Takuwan 200g Takaki Pequeno",                    "Código Barra": "7896101500272", "Marca": "Ceasa Box"},
+    {"Código": 176507, "Descrição": "Takuwan 500g Takaki Grande",                     "Código Barra": "7896101500234", "Marca": "Ceasa Box"},
+    {"Código": 530112, "Descrição": "Tempura 200g Kai Ho",                            "Código Barra": "7896293804127", "Marca": "Agronippo"},
+    {"Código": 53679,  "Descrição": "Tikuwa 200g Agronippo",                          "Código Barra": "7896293804103", "Marca": "Agronippo"},
+    {"Código": 577380, "Descrição": "Tiocenzuke 245 conserva Pic Nabo Acelga",       "Código Barra": "7897231100219", "Marca": "Agronippo"},
+    {"Código": 524722, "Descrição": "Tofu 1kg Agronippo Nigari Momen",               "Código Barra": "7896293808156", "Marca": "Agronippo"},
+    {"Código": 524731, "Descrição": "Tofu 500g Agronippo Tradicional",               "Código Barra": "7896293802048", "Marca": "Agronippo"},
+]
+
+# ─────────────────────────────────────────────
+# CONEXÃO GOOGLE SHEETS & FUNÇÕES DE DADOS
+# ─────────────────────────────────────────────
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+@st.cache_data(ttl=15)
+def carregar_banco_oriental():
+    df_prod = conn.read(worksheet="Produtos_Oriental")
+    df_ped = conn.read(worksheet="Pedidos_Oriental")
+
+    mudou_algo = False
+
+    # Inicializa Produtos se estiver vazio
+    if df_prod.empty or "Código" not in df_prod.columns:
+        df_prod = pd.DataFrame(produtos_iniciais)
+        for loja in LOJAS: df_prod[loja] = True
+        conn.update(worksheet="Produtos_Oriental", data=df_prod)
+        mudou_algo = True
+
+    # Inicializa Pedidos se estiver vazio
+    if df_ped.empty or "Código" not in df_ped.columns:
+        df_ped = pd.DataFrame(columns=["Código"] + LOJAS)
+        df_ped["Código"] = df_prod["Código"]
+        df_ped[LOJAS] = 0
+        conn.update(worksheet="Pedidos_Oriental", data=df_ped)
+        mudou_algo = True
+
+    # --- Sincronização Automática (Se adicionarem produtos no catálogo) ---
+    novos_ped = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
+    if not novos_ped.empty:
+        df_n_ped = pd.DataFrame({"Código": novos_ped})
+        df_n_ped[LOJAS] = 0
+        df_ped = pd.concat([df_ped, df_n_ped], ignore_index=True)
+        conn.update(worksheet="Pedidos_Oriental", data=df_ped)
+        mudou_algo = True
+
+    # --- Garantia de Tipos ---
+    for loja in LOJAS:
+        if loja in df_ped.columns: df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
+        if loja in df_prod.columns: df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
+
+    if mudou_algo:
+        st.cache_data.clear()
+
+    return df_prod, df_ped
+
+# Carregamento Principal
+df_produtos, df_pedidos = carregar_banco_oriental()
 
 # ─────────────────────────────────────────────
 # SISTEMA DE LOGIN
@@ -287,7 +326,6 @@ if st.session_state['usuario_logado'] is None:
 
     with col2:
         with st.container(border=True):
-            # Header do login
             h1, h2 = st.columns([4, 1])
             with h1:
                 st.markdown("""
@@ -305,7 +343,9 @@ if st.session_state['usuario_logado'] is None:
 
             usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
             usuario_selecionado = st.selectbox("👤 Usuário de acesso:", usuarios_permitidos)
-            senha_digitada = st.text_input("🔑 Senha de acesso:", type="password")
+            
+            # Bloqueio do auto-preenchimento
+            senha_digitada = st.text_input("🔑 Senha de acesso:", type="password", autocomplete="off")
 
             st.write("<br>", unsafe_allow_html=True)
 
@@ -321,16 +361,15 @@ if st.session_state['usuario_logado'] is None:
                 elif senha_digitada:
                     st.error("⚠️ Senha incorreta. Tente novamente.")
 
-            st.markdown('<p class="login-hint">🔒 Acesso restrito — Molicenter © 2026</p>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size: 11px; color: #7d8590; text-align: center; margin-top: 10px;">🔒 Acesso restrito — Molicenter © 2026</p>', unsafe_allow_html=True)
     st.stop()
 
 # ─────────────────────────────────────────────
-# ESTADO E DADOS
+# ESTADO E DADOS PÓS-LOGIN
 # ─────────────────────────────────────────────
 usuario_atual = st.session_state['usuario_logado']
 acesso_total  = usuario_atual == "Administrador"
 
-# Oculta sidebar completamente para usuários de loja
 if not acesso_total:
     st.markdown("""
     <script>
@@ -349,71 +388,26 @@ if not acesso_total:
     </style>
     """, unsafe_allow_html=True)
 
-# Limpeza de cache se estrutura mudou
-limpar_cache = False
-if 'df_pedidos' in st.session_state:
-    if any(l not in st.session_state['df_pedidos'].columns for l in LOJAS):
-        limpar_cache = True
-if 'df_produtos' in st.session_state:
-    cols = st.session_state['df_produtos'].columns.tolist()
-    if ('Código Barra' not in cols
-            or len(st.session_state['df_produtos']) < 23
-            or any(l not in cols for l in LOJAS)):
-        limpar_cache = True
-
-if limpar_cache:
-    for k in ('df_pedidos', 'df_produtos'):
-        st.session_state.pop(k, None)
-
-if 'df_produtos' not in st.session_state:
-    produtos_iniciais = [
-        {"Código": 521798, "Descrição": "Ampan Azuki C/6 Satsumaya",                    "Código Barra": "7897327901294", "Marca": "Satsumaya"},
-        {"Código": 520504, "Descrição": "Kamaboko 200g Agronippo",                       "Código Barra": "7896293804165", "Marca": "Agronippo"},
-        {"Código": 521150, "Descrição": "Kamaboko 200g Kai-Ho Agronippo",                "Código Barra": "7896293804110", "Marca": "Agronippo"},
-        {"Código": 521974, "Descrição": "Lokyozuke Cebolinha 200g Marunaka Cons",        "Código Barra": "7897231100134", "Marca": "Agronippo"},
-        {"Código": 533623, "Descrição": "Massa Gobomaki Kai-Ho 200g",                    "Código Barra": "7896293804134", "Marca": "Agronippo"},
-        {"Código": 53662,  "Descrição": "Massa Konnyaku 350g C/Alga",                    "Código Barra": "7896293805100", "Marca": "Agronippo"},
-        {"Código": 524768, "Descrição": "Massa Shirataki 200g Agronippo Noodles Konjac","Código Barra": "7898944092266", "Marca": "Agronippo"},
-        {"Código": 583497, "Descrição": "Massa Shirataki 200g Hyde Alimentos Noodles",  "Código Barra": "7898944092211", "Marca": "Hyde Alimentos"},
-        {"Código": 577362, "Descrição": "Mirinzuke 200g Conserva De Nabo",               "Código Barra": "7896101500265", "Marca": "Agronippo"},
-        {"Código": 520911, "Descrição": "Narutomakii Kai.Ho 200g",                       "Código Barra": "7896293804158", "Marca": "Agronippo"},
-        {"Código": 141820, "Descrição": "Nippo Kyoka Natto 100g",                        "Código Barra": "7896293805001", "Marca": "Agronippo"},
-        {"Código": 524713, "Descrição": "Nippo Shirataki 200g",                          "Código Barra": "7896293805117", "Marca": "Agronippo"},
-        {"Código": 139940, "Descrição": "Shogazuke 245g Beni Shoga Gengibre Ralado",    "Código Barra": "7897231100042", "Marca": "Agronippo"},
-        {"Código": 55406,  "Descrição": "Sushi Ague 110g Agronippo",                     "Código Barra": "7896293803014", "Marca": "Agronippo"},
-        {"Código": 608981, "Descrição": "Takuan 200g Haruko Amarelo",                    "Código Barra": "0798190064482", "Marca": "Haruko"},
-        {"Código": 521965, "Descrição": "Takuan 500g Haruko Amarelo",                    "Código Barra": "0798190022024", "Marca": "Haruko"},
-        {"Código": 100221, "Descrição": "Takuwan 200g Takaki Pequeno",                   "Código Barra": "7896101500272", "Marca": "Ceasa Box"},
-        {"Código": 176507, "Descrição": "Takuwan 500g Takaki Grande",                    "Código Barra": "7896101500234", "Marca": "Ceasa Box"},
-        {"Código": 530112, "Descrição": "Tempura 200g Kai Ho",                           "Código Barra": "7896293804127", "Marca": "Agronippo"},
-        {"Código": 53679,  "Descrição": "Tikuwa 200g Agronippo",                         "Código Barra": "7896293804103", "Marca": "Agronippo"},
-        {"Código": 577380, "Descrição": "Tiocenzuke 245 conserva Pic Nabo Acelga",       "Código Barra": "7897231100219", "Marca": "Agronippo"},
-        {"Código": 524722, "Descrição": "Tofu 1kg Agronippo Nigari Momen",               "Código Barra": "7896293808156", "Marca": "Agronippo"},
-        {"Código": 524731, "Descrição": "Tofu 500g Agronippo Tradicional",               "Código Barra": "7896293802048", "Marca": "Agronippo"},
-    ]
-    df_init = pd.DataFrame(produtos_iniciais)
-    for loja in LOJAS:
-        df_init[loja] = True
-    st.session_state['df_produtos'] = df_init
-
-if 'df_pedidos' not in st.session_state:
-    df_p = pd.DataFrame(columns=["Código"] + LOJAS)
-    df_p["Código"] = st.session_state['df_produtos']["Código"]
-    df_p[LOJAS] = 0
-    st.session_state['df_pedidos'] = df_p
-
-def sincronizar_tabelas():
-    df_prod = st.session_state['df_produtos']
-    df_ped  = st.session_state['df_pedidos']
-    df_ped  = df_ped[df_ped["Código"].isin(df_prod["Código"])]
-    novos   = df_prod[~df_prod["Código"].isin(df_ped["Código"])]["Código"]
-    if not novos.empty:
-        df_n = pd.DataFrame({"Código": novos})
-        df_n[LOJAS] = 0
-        df_ped = pd.concat([df_ped, df_n], ignore_index=True)
-    st.session_state['df_pedidos'] = df_ped
-
-sincronizar_tabelas()
+# ─────────────────────────────────────────────
+# MODAL ZERAR TUDO
+# ─────────────────────────────────────────────
+@st.dialog("🚨 Confirmação Necessária")
+def modal_zerar_pedidos_oriental():
+    st.markdown("Tem certeza que deseja **zerar todos os pedidos** de todas as lojas?")
+    st.markdown("⚠️ *Esta ação limpará as quantidades direto no Google Sheets e não poderá ser desfeita.*")
+    
+    st.write("<br>", unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("❌ Não, cancelar", use_container_width=True):
+            st.rerun()
+    with c2:
+        if st.button("✔️ Sim, zerar tudo", type="primary", use_container_width=True):
+            _, df_ped = carregar_banco_oriental()
+            df_ped[LOJAS] = 0
+            conn.update(worksheet="Pedidos_Oriental", data=df_ped)
+            st.cache_data.clear()
+            st.rerun()
 
 # ─────────────────────────────────────────────
 # SIDEBAR
@@ -440,8 +434,7 @@ with st.sidebar:
 
     st.divider()
 
-    # Contador rápido de pedidos com itens
-    total_preenchidos = (st.session_state['df_pedidos'][LOJAS] > 0).any(axis=1).sum()
+    total_preenchidos = (df_pedidos[LOJAS] > 0).any(axis=1).sum()
     st.metric("Itens c/ pedido", total_preenchidos, help="Itens que têm ao menos 1 quantidade preenchida")
 
     st.divider()
@@ -449,9 +442,6 @@ with st.sidebar:
         st.session_state['usuario_logado'] = None
         st.rerun()
 
-# ─────────────────────────────────────────────
-# HELPER: cabeçalho de página
-# ─────────────────────────────────────────────
 def page_header(icon: str, title: str, subtitle: str = ""):
     sub_html = f'<div class="page-header-sub">{subtitle}</div>' if subtitle else ""
     st.markdown(f"""
@@ -473,8 +463,8 @@ if perfil_navegacao == "Separação e Fechamento":
                 "Consolidado geral — edite quantidades diretamente na tabela")
 
     with st.container(border=True):
-        df_base  = st.session_state['df_produtos'][["Código","Descrição","Código Barra","Marca"]]
-        df_final = pd.merge(df_base, st.session_state['df_pedidos'], on="Código")
+        df_base  = df_produtos[["Código","Descrição","Código Barra","Marca"]]
+        df_final = pd.merge(df_base, df_pedidos, on="Código")
         df_final["TOTAL GERAL"] = df_final[LOJAS].sum(axis=1)
 
         col_cfg = {
@@ -494,14 +484,16 @@ if perfil_navegacao == "Separação e Fechamento":
 
         st.divider()
 
-        # Ajuste de layout para comportar o botão do Excel
         col_salvar, col_csv, col_excel, col_limpa, _ = st.columns([2.5, 1.5, 1.5, 2, 2.5])
 
         with col_salvar:
             if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
+                _, df_ped_fresco = carregar_banco_oriental()
                 for loja in LOJAS:
-                    st.session_state['df_pedidos'][loja] = df_editado_admin[loja]
-                st.success("✅ Ajustes salvos com sucesso!")
+                    df_ped_fresco[loja] = df_editado_admin[loja]
+                conn.update(worksheet="Pedidos_Oriental", data=df_ped_fresco)
+                st.cache_data.clear()
+                st.success("✅ Ajustes salvos com sucesso na nuvem!")
                 st.rerun()
 
         with col_csv:
@@ -515,7 +507,6 @@ if perfil_navegacao == "Separação e Fechamento":
             )
             
         with col_excel:
-            # Geração do arquivo Excel em memória
             buffer = io.BytesIO()
             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
                 df_editado_admin.to_excel(writer, index=False, sheet_name='Pedidos')
@@ -530,9 +521,7 @@ if perfil_navegacao == "Separação e Fechamento":
 
         with col_limpa:
             if st.button("🚨 Zerar Pedidos", use_container_width=True):
-                st.session_state['df_pedidos'][LOJAS] = 0
-                st.success("✅ Tabela zerada! Pronto para nova semana.")
-                st.rerun()
+                modal_zerar_pedidos_oriental()
 
 # ─────────────────────────────────────────────
 # ROTA 2: VISÃO DAS LOJAS
@@ -544,7 +533,6 @@ elif perfil_navegacao == "Visão das Lojas":
     else:
         loja_selecionada = usuario_atual
 
-    # ── Topbar: identidade + logout (sem sidebar) ──
     col_info, col_logout = st.columns([8, 2])
     with col_info:
         st.markdown(f"""
@@ -559,19 +547,15 @@ elif perfil_navegacao == "Visão das Lojas":
         </div>
         """, unsafe_allow_html=True)
     with col_logout:
-        # Alinha o botão verticalmente com o banner (46px = altura aprox do banner)
         st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
         if st.button("🚪 Sair / Logout", use_container_width=True):
             st.session_state['usuario_logado'] = None
             st.rerun()
 
-    # ── Produtos visíveis para esta loja ──
-    df_visiveis = st.session_state['df_produtos'][
-        st.session_state['df_produtos'][loja_selecionada] == True
-    ]
+    df_visiveis = df_produtos[df_produtos[loja_selecionada] == True]
     df_loja = pd.merge(
-        df_visiveis[["Código","Descrição"]],
-        st.session_state['df_pedidos'][["Código", loja_selecionada]],
+        df_visiveis[["Código","Descrição", "Código Barra", "Marca"]],
+        df_pedidos[["Código", loja_selecionada]],
         on="Código"
     )
 
@@ -581,20 +565,24 @@ elif perfil_navegacao == "Visão das Lojas":
 
         col_cfg_loja = {
             "Código":         st.column_config.NumberColumn(width=85,  format="%d", disabled=True),
-            "Descrição":      st.column_config.TextColumn(disabled=True),
+            "Descrição":      st.column_config.TextColumn(width=300, disabled=True),
             "Código Barra":   st.column_config.TextColumn("Cód. Barras", width=130, disabled=True),
             "Marca":          st.column_config.TextColumn(width=110, disabled=True),
             
             loja_selecionada: st.column_config.NumberColumn(
-                "🛒 Qtde", width=100, min_value=0, step=1,
+                "🛒 Qtde", width=120, min_value=0, step=1,
                 help="Digite a quantidade desejada para esta semana"
             ),
         }
 
-        df_editado = st.data_editor(
-            df_loja, column_config=col_cfg_loja,
-            hide_index=True, use_container_width=True, height=520
-        )
+        # Criação de margens com colunas vazias
+        _, col_tabela, _ = st.columns([1, 6, 1])
+
+        with col_tabela:
+            df_editado = st.data_editor(
+                df_loja, column_config=col_cfg_loja,
+                hide_index=True, use_container_width=True, height=520
+            )
 
         itens_com_pedido = int((df_editado[loja_selecionada] > 0).sum())
         total_itens      = len(df_editado)
@@ -605,19 +593,21 @@ elif perfil_navegacao == "Visão das Lojas":
 
         m1, m2, m3, _, col_btn = st.columns([1.5, 1.5, 1.5, 2, 3])
 
-        with m1:
-            st.metric("Itens preenchidos", f"{itens_com_pedido} / {total_itens}")
-        with m2:
-            st.metric("Total de unidades", total_unidades)
-        with m3:
-            st.metric("Cobertura", f"{pct}%")
+        with m1: st.metric("Itens preenchidos", f"{itens_com_pedido} / {total_itens}")
+        with m2: st.metric("Total de unidades", total_unidades)
+        with m3: st.metric("Cobertura", f"{pct}%")
         with col_btn:
             st.write("<br>", unsafe_allow_html=True)
             if st.button("💾 Salvar Pedido da Semana", type="primary", use_container_width=True):
+                _, df_ped_fresco = carregar_banco_oriental()
+                
                 for _, row in df_editado.iterrows():
-                    mask = st.session_state['df_pedidos']["Código"] == row["Código"]
-                    st.session_state['df_pedidos'].loc[mask, loja_selecionada] = row[loja_selecionada]
-                st.success(f"✅ Pedido da {loja_selecionada} salvo com sucesso!")
+                    mask_ped = df_ped_fresco["Código"] == row["Código"]
+                    df_ped_fresco.loc[mask_ped, loja_selecionada] = row[loja_selecionada]
+                
+                conn.update(worksheet="Pedidos_Oriental", data=df_ped_fresco)
+                st.cache_data.clear()
+                st.success(f"✅ Pedido da {loja_selecionada} salvo na nuvem com sucesso!")
 
 # ─────────────────────────────────────────────
 # ROTA 3: CATÁLOGO DE PRODUTOS
@@ -640,7 +630,7 @@ elif perfil_navegacao == "Catálogo de Produtos":
             config_catalogo[loja] = st.column_config.CheckboxColumn(loja, default=True, width=70)
 
         df_cat_editado = st.data_editor(
-            st.session_state['df_produtos'],
+            df_produtos,
             num_rows="dynamic",
             column_config=config_catalogo,
             hide_index=True,
@@ -653,8 +643,8 @@ elif perfil_navegacao == "Catálogo de Produtos":
         col_atualizar, col_info, _ = st.columns([2, 4, 4])
         with col_atualizar:
             if st.button("🔄 Atualizar Catálogo", type="primary", use_container_width=True):
-                st.session_state['df_produtos'] = df_cat_editado
-                sincronizar_tabelas()
+                conn.update(worksheet="Produtos_Oriental", data=df_cat_editado)
+                st.cache_data.clear()
                 st.success("✅ Catálogo e permissões atualizados para todas as lojas!")
                 st.rerun()
         with col_info:
