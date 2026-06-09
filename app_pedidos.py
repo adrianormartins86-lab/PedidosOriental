@@ -237,7 +237,7 @@ hr { border-color: var(--border) !important; }
 # ─────────────────────────────────────────────
 # CONSTANTES E PRODUTOS INICIAIS
 # ─────────────────────────────────────────────
-LOJAS = ["Loja 01", "Loja 02", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
+LOJAS = [Loja 01"", ""Loja 02"", ""Loja 05"", ""Loja 06"", ""Loja 07"", ""Loja 08""]"
 
 produtos_iniciais = [
     {"Código": 521798, "Descrição": "Ampan Azuki C/6 Satsumaya",                    "Código Barra": "7897327901294", "Marca": "Satsumaya"},
@@ -329,8 +329,8 @@ if st.session_state['usuario_logado'] is None:
             h1, h2 = st.columns([4, 1])
             with h1:
                 st.markdown("""
-                    <h2 style='margin-bottom:0'>FLV Oriental — Molicenter</h2>
-                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>Qui até 14:00hrs</p>
+                    <h2 style='margin-bottom:0'>Portal de Pedidos</h2>
+                    <p style='color:#7d8590;font-size:14px;margin-top:4px'>Horti Oriental — Molicenter</p>
                 """, unsafe_allow_html=True)
             with h2:
                 st.write("")
