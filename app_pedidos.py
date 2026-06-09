@@ -237,7 +237,7 @@ hr { border-color: var(--border) !important; }
 # ─────────────────────────────────────────────
 # CONSTANTES E PRODUTOS INICIAIS
 # ─────────────────────────────────────────────
-LOJAS = [Loja 01"", ""Loja 02"", ""Loja 05"", ""Loja 06"", ""Loja 07"", ""Loja 08""]"
+LOJAS = ["Loja 01", "Loja 02", "Loja 05", "Loja 06", "Loja 07", "Loja 08"]
 
 produtos_iniciais = [
     {"Código": 521798, "Descrição": "Ampan Azuki C/6 Satsumaya",                    "Código Barra": "7897327901294", "Marca": "Satsumaya"},
