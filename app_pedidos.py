@@ -301,7 +301,16 @@ def carregar_banco_oriental():
         conn.update(worksheet="Pedidos_Oriental", data=df_ped)
         mudou_algo = True
 
-    # --- Garantia de Tipos ---
+    # --- BLINDAGEM DE TIPOS (Evita o StreamlitAPIException) ---
+    if "Código" in df_prod.columns:
+        df_prod["Código"] = pd.to_numeric(df_prod["Código"], errors='coerce').fillna(0).astype(int)
+    if "Descrição" in df_prod.columns:
+        df_prod["Descrição"] = df_prod["Descrição"].fillna("").astype(str)
+    if "Código Barra" in df_prod.columns:
+        df_prod["Código Barra"] = df_prod["Código Barra"].astype(str).str.replace(r'\.0$', '', regex=True).replace("nan", "")
+    if "Marca" in df_prod.columns:
+        df_prod["Marca"] = df_prod["Marca"].fillna("").astype(str)
+
     for loja in LOJAS:
         if loja in df_ped.columns: df_ped[loja] = pd.to_numeric(df_ped[loja], errors='coerce').fillna(0).astype(int)
         if loja in df_prod.columns: df_prod[loja] = df_prod[loja].fillna(False).astype(bool)
@@ -681,14 +690,45 @@ elif perfil_navegacao == "Catálogo de Produtos":
 
         st.divider()
 
-        col_atualizar, col_info, _ = st.columns([2, 4, 4])
+        # Adicionei o botão que pega os nomes oficiais lá do ERP usando a view do Postgre
+        col_atualizar, col_nomes, col_info = st.columns([2.5, 2.5, 3])
+        
         with col_atualizar:
-            if st.button("🔄 Atualizar Catálogo", type="primary", use_container_width=True):
+            if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
                 conn.update(worksheet="Produtos_Oriental", data=df_cat_editado)
                 st.cache_data.clear()
                 st.success("✅ Catálogo e permissões atualizados para todas as lojas!")
                 st.rerun()
+                
+        with col_nomes:
+            if st.button("📥 Atualizar Nomes (ERP)", use_container_width=True):
+                with st.spinner("⏳ Buscando descrições atualizadas no banco de dados..."):
+                    try:
+                        conn_pg = st.connection("banco_erp", type="sql")
+                        query = 'SELECT cade_codigo, cadp_descricao FROM "python_estoque"'
+                        df_erp_nomes = conn_pg.query(query, ttl=300)
+                        
+                        if not df_erp_nomes.empty:
+                            df_erp_nomes["cade_codigo"] = pd.to_numeric(df_erp_nomes["cade_codigo"], errors='coerce').fillna(0).astype(int)
+                            df_erp_nomes = df_erp_nomes.drop_duplicates(subset=["cade_codigo"])
+                            
+                            df_update = df_cat_editado.copy()
+                            df_update = df_update.merge(df_erp_nomes, left_on="Código", right_on="cade_codigo", how="left")
+                            
+                            mask = df_update["cadp_descricao"].notna() & (df_update["cadp_descricao"] != "")
+                            df_update.loc[mask, "Descrição"] = df_update.loc[mask, "cadp_descricao"]
+                            df_update = df_update.drop(columns=["cade_codigo", "cadp_descricao"])
+                            
+                            conn.update(worksheet="Produtos_Oriental", data=df_update)
+                            st.cache_data.clear()
+                            st.success("✅ Nomes atualizados com sucesso pelo ERP!")
+                            st.rerun()
+                        else:
+                            st.warning("⚠️ Não foram encontrados dados na view do banco.")
+                    except Exception as e:
+                        st.error(f"⚠️ Erro ao puxar nomes do ERP: {e}")
+                        
         with col_info:
             total_prods = len(df_cat_editado)
             st.info(f"📦 **{total_prods}** produtos cadastrados  •  "
-                    f"**{len(LOJAS)}** lojas configuradas")
+                    f"**{len(LOJAS)}** lojas")
