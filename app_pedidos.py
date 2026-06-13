@@ -244,21 +244,21 @@ produtos_iniciais = [
     {"Código": 520504, "Descrição": "Kamaboko 200g Agronippo",                        "Código Barra": "7896293804165", "Marca": "Agronippo"},
     {"Código": 521150, "Descrição": "Kamaboko 200g Kai-Ho Agronippo",                 "Código Barra": "7896293804110", "Marca": "Agronippo"},
     {"Código": 521974, "Descrição": "Lokyozuke Cebolinha 200g Marunaka Cons",        "Código Barra": "7897231100134", "Marca": "Agronippo"},
-    {"Código": 533623, "Descrição": "Massa Gobomaki Kai-Ho 200g",                     "Código Barra": "7896293804134", "Marca": "Agronippo"},
-    {"Código": 53662,  "Descrição": "Massa Konnyaku 350g C/Alga",                     "Código Barra": "7896293805100", "Marca": "Agronippo"},
+    {"Código": 533623, "Descrição": "Massa Gobomaki Kai-Ho 200g",                      "Código Barra": "7896293804134", "Marca": "Agronippo"},
+    {"Código": 53662,  "Descrição": "Massa Konnyaku 350g C/Alga",                      "Código Barra": "7896293805100", "Marca": "Agronippo"},
     {"Código": 524768, "Descrição": "Massa Shirataki 200g Agronippo Noodles Konjac","Código Barra": "7898944092266", "Marca": "Agronippo"},
     {"Código": 583497, "Descrição": "Massa Shirataki 200g Hyde Alimentos Noodles",  "Código Barra": "7898944092211", "Marca": "Hyde Alimentos"},
     {"Código": 577362, "Descrição": "Mirinzuke 200g Conserva De Nabo",               "Código Barra": "7896101500265", "Marca": "Agronippo"},
     {"Código": 520911, "Descrição": "Narutomakii Kai.Ho 200g",                        "Código Barra": "7896293804158", "Marca": "Agronippo"},
-    {"Código": 141820, "Descrição": "Nippo Kyoka Natto 100g",                         "Código Barra": "7896293805001", "Marca": "Agronippo"},
-    {"Código": 524713, "Descrição": "Nippo Shirataki 200g",                           "Código Barra": "7896293805117", "Marca": "Agronippo"},
+    {"Código": 141820, "Descrição": "Nippo Kyoka Natto 100g",                          "Código Barra": "7896293805001", "Marca": "Agronippo"},
+    {"Código": 524713, "Descrição": "Nippo Shirataki 200g",                            "Código Barra": "7896293805117", "Marca": "Agronippo"},
     {"Código": 139940, "Descrição": "Shogazuke 245g Beni Shoga Gengibre Ralado",    "Código Barra": "7897231100042", "Marca": "Agronippo"},
     {"Código": 55406,  "Descrição": "Sushi Ague 110g Agronippo",                      "Código Barra": "7896293803014", "Marca": "Agronippo"},
-    {"Código": 608981, "Descrição": "Takuan 200g Haruko Amarelo",                     "Código Barra": "0798190064482", "Marca": "Haruko"},
-    {"Código": 521965, "Descrição": "Takuan 500g Haruko Amarelo",                     "Código Barra": "0798190022024", "Marca": "Haruko"},
+    {"Código": 608981, "Descrição": "Takuan 200g Haruko Amarelo",                      "Código Barra": "0798190064482", "Marca": "Haruko"},
+    {"Código": 521965, "Descrição": "Takuan 500g Haruko Amarelo",                      "Código Barra": "0798190022024", "Marca": "Haruko"},
     {"Código": 100221, "Descrição": "Takuwan 200g Takaki Pequeno",                    "Código Barra": "7896101500272", "Marca": "Ceasa Box"},
-    {"Código": 176507, "Descrição": "Takuwan 500g Takaki Grande",                     "Código Barra": "7896101500234", "Marca": "Ceasa Box"},
-    {"Código": 530112, "Descrição": "Tempura 200g Kai Ho",                            "Código Barra": "7896293804127", "Marca": "Agronippo"},
+    {"Código": 176507, "Descrição": "Takuwan 500g Takaki Grande",                      "Código Barra": "7896101500234", "Marca": "Ceasa Box"},
+    {"Código": 530112, "Descrição": "Tempura 200g Kai Ho",                             "Código Barra": "7896293804127", "Marca": "Agronippo"},
     {"Código": 53679,  "Descrição": "Tikuwa 200g Agronippo",                          "Código Barra": "7896293804103", "Marca": "Agronippo"},
     {"Código": 577380, "Descrição": "Tiocenzuke 245 conserva Pic Nabo Acelga",       "Código Barra": "7897231100219", "Marca": "Agronippo"},
     {"Código": 524722, "Descrição": "Tofu 1kg Agronippo Nigari Momen",               "Código Barra": "7896293808156", "Marca": "Agronippo"},
@@ -559,18 +559,59 @@ elif perfil_navegacao == "Visão das Lojas":
         on="Código"
     )
 
+    # ------------------ ESTOQUE VIA POSTGRESQL ----------------------
+    mapa_banco_erp = {
+        "Loja 01": "001", "Loja 02": "002", "Loja 03": "003",
+        "Loja 04": "004", "Loja 05": "005", "Loja 06": "006",
+        "Loja 07": "007", "Loja 08": "008"
+    }
+    cod_empresa_banco = mapa_banco_erp.get(loja_selecionada, "001")
+
+    try:
+        conn_pg = st.connection("banco_erp", type="sql")
+        
+        # Puxando direto da View que você já criou no Postgre
+        query_erp = f"""
+            SELECT cade_codigo, estoque
+            FROM "python_estoque"
+            WHERE cade_codempresa::text = '{cod_empresa_banco}'
+        """
+        df_erp = conn_pg.query(query_erp, ttl=300)
+
+        if not df_erp.empty:
+            df_erp["cade_codigo"] = pd.to_numeric(df_erp["cade_codigo"], errors='coerce').fillna(0).astype(int)
+            df_erp = df_erp.rename(columns={"cade_codigo": "Código", "estoque": "Estoque"})
+            
+            df_loja["Código"] = pd.to_numeric(df_loja["Código"], errors='coerce').fillna(0).astype(int)
+            df_loja = pd.merge(df_loja, df_erp[["Código", "Estoque"]], on="Código", how="left")
+        else:
+            df_loja["Estoque"] = 0
+
+    except Exception as e:
+        if "No database configured" in str(e) or "missing" in str(e).lower():
+             st.error("⚠️ Aviso: As credenciais do banco_erp precisam estar configuradas no Streamlit Secrets.")
+        else:
+             st.error(f"⚠️ Erro ao puxar dados do ERP: {e}")
+        df_loja["Estoque"] = 0
+        
+    df_loja["Estoque"] = df_loja["Estoque"].fillna(0).astype(int)
+    # -----------------------------------------------------------------
+
+    # Força a ordem exata das colunas: Estoque antes do Pedido
+    df_loja = df_loja[["Código", "Descrição", "Código Barra", "Marca", "Estoque", loja_selecionada]]
+
     with st.container(border=True):
         st.info("💡 **Dica:** Clique em uma célula da coluna **Qtde** para editar. "
                 "Linhas com quantidade > 0 ficam destacadas automaticamente.")
 
         col_cfg_loja = {
             "Código":         st.column_config.NumberColumn(width=85,  format="%d", disabled=True),
-            "Descrição":      st.column_config.TextColumn(width=300, disabled=True),
-            "Código Barra":   st.column_config.TextColumn("Cód. Barras", width=130, disabled=True),
-            "Marca":          st.column_config.TextColumn(width=110, disabled=True),
-            
+            "Descrição":      st.column_config.TextColumn(width=280, disabled=True),
+            "Código Barra":   st.column_config.TextColumn("Cód. Barras", width=120, disabled=True),
+            "Marca":          st.column_config.TextColumn(width=100, disabled=True),
+            "Estoque":        st.column_config.NumberColumn("📦 Estoque", width=90, disabled=True),
             loja_selecionada: st.column_config.NumberColumn(
-                "🛒 Qtde", width=120, min_value=0, step=1,
+                "🛒 Qtde", width=100, min_value=0, step=1,
                 help="Digite a quantidade desejada para esta semana"
             ),
         }
